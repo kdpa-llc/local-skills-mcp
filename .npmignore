@@ -1,0 +1,39 @@
+# Source files (users only need dist/)
+src/
+tsconfig.json
+*.ts
+!*.d.ts
+
+# Build artifacts
+*.tgz
+
+# GitHub files
+.github/
+
+# Local settings
+.claude/
+
+# Development files
+.vscode/
+.idea/
+
+# Test files if you add them later
+test/
+*.test.js
+*.spec.js
+
+# Git files
+.git/
+.gitignore
+.gitattributes
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Editor files
+*.swp
+*.swo
+*~
+.DS_Store
