@@ -17,11 +17,9 @@
 
 [Quick Start](#-quick-start) •
 [Features](#-features) •
-[Installation](#-installation) •
-[Demo](#-demo) •
-[Documentation](#-documentation) •
+[Usage](#-usage) •
 [FAQ](#-faq) •
-[Support](#-support-this-project)
+[Contributing](#-contributing)
 
 </div>
 
@@ -31,98 +29,53 @@
 
 - [What is Local Skills MCP?](#what-is-local-skills-mcp)
 - [✨ Features](#-features)
-  - [Universal LLM/Agent Support](#universal-llmagent-support)
-  - [Powerful Skill Management](#powerful-skill-management)
 - [🚀 Quick Start](#-quick-start)
-  - [1. Install](#1-install)
-  - [2. Configure Your MCP Client](#2-configure-your-mcp-client)
-  - [3. Create a Skill](#3-create-a-skill)
-  - [4. Use It](#4-use-it)
-- [📦 Installation](#-installation)
-  - [Prerequisites](#prerequisites)
-  - [Installation Methods](#method-1-install-directly-from-github-easiest)
-- [🎯 Usage](#-usage)
-  - [MCP Tool Available](#mcp-tool-available)
-  - [Skills Aggregation](#skills-aggregation)
-  - [Configuration Examples](#configuration-examples)
 - [📝 SKILL.md Format](#-skillmd-format)
-  - [Required Fields](#required-fields)
-  - [Writing Effective Descriptions](#writing-effective-descriptions)
-- [📚 Examples](#-examples)
-- [🎬 Demo](#-demo)
-- [🏗️ Project Structure](#️-project-structure)
-- [🤖 Why Local Skills Matter for AI Agents](#-why-local-skills-matter-for-ai-agents)
-  - [Universal Skill Library](#universal-skill-library)
-  - [Context Window Efficiency](#context-window-efficiency)
-  - [The MCP Advantage](#the-mcp-advantage)
+- [🎯 Usage](#-usage)
 - [🆚 Differences from Built-in Skills](#-differences-from-built-in-skills)
-- [📖 Documentation](#-documentation)
-- [🛠️ Troubleshooting](#️-troubleshooting)
 - [❓ FAQ](#-faq)
 - [🤝 Contributing](#-contributing)
-- [💖 Support This Project](#-support-this-project)
-- [📄 License](#-license)
-- [🙏 Acknowledgments](#-acknowledgments)
-- [📊 Version History](#-version-history)
 
 ---
 
 ## What is Local Skills MCP?
 
-A **universal** Model Context Protocol (MCP) server that enables **any LLM or AI agent** to access expert skills from your local filesystem. Using the SKILL.md format with YAML frontmatter, your skills become portable, reusable prompt libraries that work across different AI systems.
+A **universal** Model Context Protocol (MCP) server that enables **any LLM or AI agent** to access expert skills from your local filesystem. Your skills become portable, reusable prompt libraries that work across Claude Code, Claude Desktop, Cline, Continue.dev, custom agents, or any MCP-compatible client.
 
-**🌐 Universal Compatibility**: Works with any MCP-compatible client—Claude Code, Claude Desktop, Cline, Continue.dev, custom agents, or any LLM integration that supports the Model Context Protocol.
-
-**💡 The Power of Skills**: Transform any AI agent's capabilities by providing structured, expert-level prompt instructions for specialized tasks. Your skills become a knowledge base that any compatible AI can leverage on-demand.
-
-**⚡ Efficient Context Management**: Reduces context consumption through lazy loading—only the skill names and descriptions are initially visible to the AI. Full skill content loads only when invoked, preserving precious context window space for your actual work.
+Transform AI capabilities with structured, expert-level instructions for specialized tasks. Lazy loading preserves context—only skill names and descriptions load initially; full content loads on-demand.
 
 ## ✨ Features
 
-### Universal LLM/Agent Support
-- **🌐 Any MCP Client** - Works with Claude Code, Claude Desktop, Cline, Continue.dev, custom agents, or any MCP-compatible LLM
-- **🔄 Portable Skills** - Write once, use across multiple AI systems and agents
-- **🤖 LLM-Agnostic** - Skills are structured prompts that work with any language model (Claude, GPT, Gemini, local models, etc.)
-
-### Powerful Skill Management
-- **🗂️ Standard Format** - Uses SKILL.md format with YAML frontmatter for maximum compatibility
-- **⚡ Lazy Loading** - Skills loaded on-demand with intelligent caching; reduces context consumption by loading full content only when invoked
-- **💾 Context Efficient** - Only skill names and descriptions consume context initially; full instructions load on-demand
-- **🔄 Skill Aggregation** - Automatically aggregates skills from all configured directories
-- **🎯 Multi-Source** - Combines skills from ~/.claude/skills, ./.claude/skills, ./skills, and custom paths
-- **🤖 Dynamic Discovery** - Tool description updates in real-time to include available skills
-- **📦 Zero Config** - Works out-of-the-box with standard locations
-- **✨ Ultra Simple** - Just 1 tool: get_skill (with built-in discovery)
+- **🌐 Universal** - Works with any MCP client (Claude Code, Desktop, Cline, Continue.dev, custom agents)
+- **🔄 Portable** - Write once, use across multiple AI systems and LLMs (Claude, GPT, Gemini, local models)
+- **⚡ Context Efficient** - Lazy loading: only skill names/descriptions load initially (~50 tokens/skill), full content on-demand
+- **🎯 Multi-Source** - Auto-aggregates from `~/.claude/skills`, `./.claude/skills`, `./skills`, and custom paths
+- **📦 Zero Config** - Works out-of-the-box with standard skill locations
+- **✨ Ultra Simple** - Single tool (`get_skill`) with dynamic skill discovery
 
 ## 🚀 Quick Start
 
-### 1. Install
+### Install
 
-**Easiest way - Install from GitHub:**
-
+**From GitHub (recommended):**
 ```bash
-npm install -g github:moscaverd/local-skills
+npm install -g github:moscaverd/local-skills-mcp
 ```
 
-**Or clone and build:**
-
+**Or clone locally:**
 ```bash
-git clone https://github.com/moscaverd/local-skills.git
-cd local-skills
-npm install
+git clone https://github.com/moscaverd/local-skills-mcp.git
+cd local-skills-mcp
+npm install  # The prepare script auto-builds
 ```
 
-The `prepare` script automatically builds the project.
+**Requirements:** Node.js 18+, any MCP-compatible client
 
-### 2. Configure Your MCP Client
+### Configure MCP Client
 
-The server works with any MCP-compatible client. Here are examples for popular clients:
+Add to your MCP client configuration (e.g., `~/.config/claude-code/mcp.json`):
 
-#### Claude Code / Claude Desktop
-
-Add to `~/.config/claude-code/mcp.json` (or Claude Desktop's config):
-
-**Option A: Global Command (If installed from GitHub)**
+**If installed globally:**
 ```json
 {
   "mcpServers": {
@@ -133,91 +86,34 @@ Add to `~/.config/claude-code/mcp.json` (or Claude Desktop's config):
 }
 ```
 
-**Option B: Direct Path (If cloned locally)**
+**If cloned locally:**
 ```json
 {
   "mcpServers": {
     "local-skills": {
       "command": "node",
-      "args": ["/absolute/path/to/local-skills/dist/index.js"]
+      "args": ["/absolute/path/to/local-skills-mcp/dist/index.js"]
     }
   }
 }
 ```
 
-**Option C: From Specific Install Location**
-```json
-{
-  "mcpServers": {
-    "local-skills": {
-      "command": "node",
-      "args": ["~/mcp-servers/local-skills/node_modules/local-skills-mcp/dist/index.js"]
-    }
-  }
-}
-```
+**For Cline:** Same config in VS Code Settings → "Cline: MCP Settings"
 
-#### Cline (VS Code Extension)
+**For other MCP clients:** Use the same command/args structure according to their MCP server setup.
 
-Cline is a popular VS Code extension that supports MCP servers. Add to your Cline MCP settings:
+The server auto-aggregates from: `~/.claude/skills/`, `./.claude/skills/`, `./skills`, and `$SKILLS_DIR` (if set).
 
-**Using VS Code Settings (Recommended):**
+### Create & Use Skills
 
-1. Open VS Code Settings (Cmd/Ctrl + ,)
-2. Search for "Cline: MCP Settings"
-3. Click "Edit in settings.json"
-4. Add the server configuration:
-
-```json
-{
-  "cline.mcpServers": {
-    "local-skills": {
-      "command": "local-skills-mcp"
-    }
-  }
-}
-```
-
-**Or configure via Cline's settings UI:**
-
-1. Open Cline extension
-2. Go to Settings → MCP Servers
-3. Add new server:
-   - **Name**: local-skills
-   - **Command**: `local-skills-mcp`
-   - **Args**: (leave empty if using global install)
-
-#### Other MCP-Compatible Clients
-
-For custom agents or other MCP clients, configure according to their MCP server setup process. The command and arguments are the same:
-
-```bash
-# Command
-local-skills-mcp
-
-# Or with full path
-node /path/to/local-skills-mcp/dist/index.js
-```
-
-The server automatically aggregates skills from all existing directories:
-- `~/.claude/skills/` (personal, Claude compatibility)
-- `./.claude/skills/` (project-local)
-- `./skills` (repository/workspace)
-- `$SKILLS_DIR` (custom location via environment variable)
-
-### 3. Create a Skill
-
-**`~/.claude/skills/my-skill/SKILL.md`**
-
+Create `~/.claude/skills/my-skill/SKILL.md`:
 ```markdown
 ---
 name: my-skill
 description: What this skill does and when to use it
 ---
 
-You are an expert at [domain].
-
-Your task is to [specific task].
+You are an expert at [domain]. Your task is to [specific task].
 
 Guidelines:
 1. Be specific
@@ -225,152 +121,49 @@ Guidelines:
 3. Be helpful
 ```
 
-### 4. Use It
+Then request it in your AI client: `"Use the my-skill skill"`
 
-In any MCP-compatible client, simply request a skill by name:
+The AI auto-discovers available skills and loads them on-demand.
 
-**Example with Claude Code:**
-```
-Use the code-reviewer skill to review this code
-```
+## 📝 SKILL.md Format
 
-**Example with custom agent:**
-```python
-# The agent sees available skills via MCP tools
-# and can invoke get_skill with the skill name
-result = mcp_client.call_tool("get_skill", {"skill_name": "code-reviewer"})
-```
+Every skill is a `SKILL.md` file with YAML frontmatter:
 
-The AI sees all available skills in the tool description automatically and retrieves the one needed for the task.
+```markdown
+---
+name: skill-name
+description: Brief description of what this skill does and when to use it
+---
 
-## 📦 Installation
-
-### Prerequisites
-
-- Node.js 18 or higher
-- Claude Code or any MCP-compatible client
-
-### Method 1: Install Directly from GitHub (Easiest)
-
-No cloning required! Install directly from GitHub:
-
-```bash
-npm install -g github:moscaverd/local-skills
+Your skill instructions in Markdown format...
 ```
 
-Then use the `local-skills-mcp` command in your MCP configuration.
+**Required Fields:**
+- `name` - Skill identifier (lowercase, hyphens, max 64 chars)
+- `description` - Critical for skill selection (max 200 chars)
 
-**Or** install to a specific directory without global install:
+**Writing Effective Descriptions:**
 
-```bash
-npm install github:moscaverd/local-skills --prefix ~/mcp-servers/local-skills
-```
+Pattern: `[What it does]. Use when [trigger conditions/keywords].`
 
-Then use: `node ~/mcp-servers/local-skills/node_modules/local-skills-mcp/dist/index.js`
+- ✅ **Good**: "Generates clear commit messages from git diffs. Use when writing commit messages or reviewing staged changes."
+- ✅ **Good**: "Analyze Excel spreadsheets and create pivot tables. Use when working with .xlsx files or tabular data."
+- ❌ **Poor**: "Helps with Excel files"
 
-### Method 2: Clone and Build (For Development)
-
-```bash
-git clone https://github.com/moscaverd/local-skills.git
-cd local-skills
-npm install
-npm run build
-```
-
-Then use the direct path in your MCP configuration (see Configuration section below).
-
-### Method 3: Global Link (For Development)
-
-After cloning, link it globally:
-
-```bash
-cd local-skills
-npm install
-npm link
-```
-
-Then you can use `local-skills-mcp` as a command in your MCP configuration.
-
-### Development Mode
-
-For active development:
-
-```bash
-npm run watch
-```
+Claude uses language understanding to decide when to invoke skills—specific trigger keywords help Claude make better decisions.
 
 ## 🎯 Usage
 
-### MCP Tool Available
-
-**`get_skill`** - The only tool you need!
-
-**What it does:**
-- Loads specialized expert prompt instructions that transform Claude's capabilities for specific tasks
-- Each skill provides comprehensive guidance, proven methodologies, and domain-specific best practices
-- **Dynamically includes the current list of available skills in its description**
-
-**When to use it:**
-- When you need focused expertise, systematic approaches, or professional standards
-- Any task that would benefit from specialized knowledge or structured guidance
-- Invoke with the skill name to receive detailed, expert-level instructions
+**Single Tool:** `get_skill` - loads expert prompt instructions for specific tasks
 
 **How it works:**
-1. Claude sees all available skills listed in the tool description automatically
-2. When you request a skill (e.g., "use the code-reviewer skill"), Claude invokes get_skill
-3. The full skill content loads with detailed instructions and best practices
+1. AI sees all available skills in the tool description (auto-updated)
+2. When you request a skill, AI invokes `get_skill`
+3. Full skill content loads with detailed instructions
 
-That's it! Ultra simple - just one tool with built-in discovery.
+**Skill Aggregation:** Auto-aggregates from `~/.claude/skills/`, `./.claude/skills/`, `./skills`, and `$SKILLS_DIR` (if set). Later directories override duplicates.
 
-#### 🌟 Intelligent Tool Descriptions
-
-Following **Claude Skills best practices**, our tool descriptions are designed to help Claude understand:
-
-- **What** the tool does (capability)
-- **Why** it's valuable (benefit/outcome)
-- **When** to use it (trigger conditions)
-
-**Pattern**: `[What it does]. [Value proposition]. Use when [specific trigger keywords/contexts].`
-
-This follows Anthropic's approach where Claude makes tool decisions based purely on language understanding—no embeddings or classifiers. The tool description uses generic utilization language, while the dynamic skill list provides the specific capabilities available in your environment.
-
-**Dynamic Discovery**: The `get_skill` tool description is regenerated each time Claude queries for tools, always showing the current list of available skills. This progressive disclosure pattern ensures Claude knows what expertise is available without extra API calls.
-
-### Skills Aggregation
-
-The server **aggregates skills from ALL existing directories**:
-
-1. **`~/.claude/skills/`** - Personal Claude skills
-2. **`./.claude/skills/`** - Project-local skills
-3. **`./skills`** - Local development skills
-4. **`$SKILLS_DIR`** - Additional custom directory (if set)
-
-Skills from later directories override duplicates from earlier ones.
-
-### Configuration Examples
-
-**Auto-aggregate all directories (recommended):**
-
-If installed globally from GitHub:
-```json
-{
-  "command": "local-skills-mcp"
-}
-```
-
-If cloned locally:
-```json
-{
-  "command": "node",
-  "args": ["/absolute/path/to/local-skills/dist/index.js"]
-}
-```
-
-This aggregates from ~/.claude/skills/, ./.claude/skills/, and ./skills automatically.
-
-**Add custom directory:**
-
-With global command:
+**Custom Directory:** Add via environment variable:
 ```json
 {
   "command": "local-skills-mcp",
@@ -380,73 +173,11 @@ With global command:
 }
 ```
 
-With local path:
-```json
-{
-  "command": "node",
-  "args": ["/absolute/path/to/local-skills/dist/index.js"],
-  "env": {
-    "SKILLS_DIR": "/custom/path/to/skills"
-  }
-}
-```
-
-This adds your custom directory to the aggregation (along with the standard locations).
-
-## 📝 SKILL.md Format
-
-Every skill is a single `SKILL.md` file with YAML frontmatter:
-
-```markdown
----
-name: skill-name
-description: Brief description of what this skill does and when to use it
----
-
-Your skill instructions in Markdown format...
-
-You are an expert at [domain].
-
-Your task is to [task].
-
-Follow these guidelines:
-1. First guideline
-2. Second guideline
-```
-
-### Required Fields
-
-- **`name`** - Skill identifier (lowercase, hyphens, max 64 chars)
-- **`description`** - Critical for skill selection (max 200 chars)
-
-### Writing Effective Descriptions
-
-Based on **Anthropic's Claude Skills best practices**, descriptions should follow this pattern:
-
-**Pattern**: `[What it does]. Use when [trigger conditions/keywords].`
-
-**Best Practices**:
-- ✅ Be **specific** about capabilities and outcomes
-- ✅ Include **trigger keywords** users would mention (file types, task names, domains)
-- ✅ Use **problem-solution framing**
-- ✅ Mention **when to use it** explicitly
-- ❌ Avoid vague descriptions like "helps with coding"
-
-**Examples**:
-- ✅ **Good**: "Generates clear commit messages from git diffs. Use when writing commit messages or reviewing staged changes."
-- ✅ **Good**: "Analyze Excel spreadsheets, create pivot tables, and generate charts. Use when working with Excel files, spreadsheets, or analyzing tabular data in .xlsx format."
-- ❌ **Poor**: "Helps with Excel files"
-
-**Why This Matters**: Claude uses pure language understanding to decide when to invoke skills—no embeddings or classifiers. Clear descriptions with specific trigger keywords help Claude make better decisions.
-
-## 📚 Examples
-
-### Code Review Skill
-
+**Example Skill:**
 ```markdown
 ---
 name: code-reviewer
-description: Reviews code for best practices, potential bugs, and security issues. Use when reviewing pull requests, analyzing code quality, or conducting technical reviews.
+description: Reviews code for best practices, bugs, and security. Use when reviewing PRs or analyzing code quality.
 ---
 
 You are a code reviewer with expertise in software engineering best practices.
@@ -454,349 +185,74 @@ You are a code reviewer with expertise in software engineering best practices.
 Analyze the code for:
 1. Correctness and bugs
 2. Best practices
-3. Performance issues
-4. Security vulnerabilities
-5. Maintainability
+3. Performance and security issues
+4. Maintainability
 
 Provide specific, actionable feedback.
 ```
-
-### Test Generator Skill
-
-```markdown
----
-name: test-generator
-description: Generates comprehensive unit tests with edge cases and mocking. Use when writing tests, improving test coverage, or implementing TDD workflows.
----
-
-You are a testing expert who writes high-quality unit tests.
-
-Create tests that:
-1. Cover edge cases
-2. Test happy paths
-3. Test error handling
-4. Follow AAA pattern (Arrange, Act, Assert)
-
-Use descriptive test names and mock dependencies.
-```
-
-## 🎬 Demo
-
-### See It In Action
-
-Here's how Local Skills MCP works with Claude Code:
-
-<!-- Add your demo GIF/screenshot here -->
-<!-- ![Local Skills MCP Demo](./assets/demo.gif) -->
-
-**📸 Demo Coming Soon!** We're working on creating visual demos showing:
-- 🎯 Skill discovery and invocation in Claude Code
-- ⚡ Real-time lazy loading in action
-- 🔄 Multi-directory skill aggregation
-- 🤖 Skills working across different MCP clients
-
-**In the meantime, try it yourself!** Follow the [Quick Start](#-quick-start) guide to see Local Skills MCP in action.
-
-### What Happens When You Use a Skill
-
-```
-User: "Use the code-reviewer skill to review this function"
-
-Claude: [Invokes get_skill tool with skill_name: "code-reviewer"]
-        [Receives comprehensive code review guidelines]
-        [Applies expert-level review methodology]
-
-Result: Detailed code review with specific, actionable feedback
-```
-
-**Key Features Demonstrated:**
-- ✅ Zero configuration - works out of the box
-- ✅ On-demand loading - skill content loads only when needed
-- ✅ Universal compatibility - same skills work across any MCP client
-- ✅ Context efficient - preserves 95%+ of context window
-
-### Example Terminal Output
-
-```bash
-$ local-skills-mcp
-Local Skills MCP Server started
-Skills loaded from:
-  - ~/.claude/skills (3 skills)
-  - ./.claude/skills (2 skills)
-  - ./skills (4 skills)
-Total: 9 skills available
-
-Available skills:
-  - code-reviewer
-  - test-generator
-  - documentation-writer
-  - debugging-assistant
-  - ...
-
-Server ready on stdio
-```
-
-## 🏗️ Project Structure
-
-```
-local-skills-mcp/
-├── src/
-│   ├── index.ts          # MCP server
-│   ├── skill-loader.ts   # Skill loading logic
-│   └── types.ts          # TypeScript types
-├── skills/               # Example skills
-│   ├── code-reviewer/
-│   │   └── SKILL.md
-│   ├── test-generator/
-│   │   └── SKILL.md
-│   └── ...
-├── dist/                 # Compiled output
-└── package.json
-```
-
-## 🤖 Why Local Skills Matter for AI Agents
-
-### Universal Skill Library
-Skills are **structured prompt instructions** that work with any LLM or AI agent. By using the MCP protocol, you create a portable skill library that:
-
-- **Works across AI systems** - Same skills work with Claude, GPT-based agents, custom LLMs, or future AI systems
-- **Centralizes expertise** - Build once, reuse everywhere - no need to recreate prompts for each AI tool
-- **Enables team sharing** - Share skill directories across your team for consistent AI behavior
-- **Supports multi-agent workflows** - Different agents can access the same expert knowledge
-- **Preserves context** - Lazy loading means only relevant skill details consume your AI's context window
-
-### Real-World Use Cases
-
-**For Developers:**
-- Custom coding agents that leverage your team's best practices
-- CI/CD agents with access to code review and testing skills
-- Development workflows with specialized skills for each stage
-
-**For Teams:**
-- Shared skill libraries across different AI tools
-- Consistent expertise across multiple agents
-- Version-controlled prompt management
-
-**For Custom Agents:**
-- Build specialized AI agents with curated skill sets
-- Create domain-specific assistants (legal, medical, technical, etc.)
-- Extend any MCP-compatible LLM with expert capabilities
-
-### Context Window Efficiency
-
-**The Problem**: Loading all expert prompts into an AI's context upfront wastes valuable context window space and limits what you can accomplish.
-
-**The Solution**: Local Skills MCP uses progressive disclosure:
-- **Discovery Phase**: AI sees only skill names and brief descriptions (~50 tokens per skill)
-- **Invocation Phase**: Full skill instructions load only when requested
-- **Result**: Preserve 95%+ of your context window for actual work instead of prompt libraries
-
-This is especially valuable when:
-- Working with long conversations or large codebases
-- Using models with smaller context windows
-- Managing dozens or hundreds of skills
-- Running multiple agents that need different skill subsets
-
-### The MCP Advantage
-
-The Model Context Protocol makes this possible by providing a **standard interface** for AI tools. Any agent that speaks MCP can:
-1. **Discover** available skills dynamically (minimal context usage)
-2. **Load** expert instructions on-demand (only when needed)
-3. **Execute** with enhanced capabilities (without context bloat)
-4. **Share** skills across different AI systems (universal compatibility)
-
-This means your investment in creating skills pays off across your entire AI ecosystem, not just one tool.
 
 ## 🆚 Differences from Built-in Skills
 
 | Feature | Local Skills MCP | Built-in Claude Skills |
 |---------|------------------|------------------------|
-| **Storage** | Multiple directories aggregated | `~/.claude/skills/` only |
-| **Aggregation** | Combines all skill sources | Single directory |
-| **Invocation** | Explicit via MCP tool | Auto-invoked by Claude |
-| **Control** | Full control over when | Claude decides when |
 | **Portability** | Any MCP client | Claude Code only |
+| **Storage** | Multiple directories aggregated | `~/.claude/skills/` only |
+| **Invocation** | Explicit via MCP tool | Auto-invoked by Claude |
 | **Context Usage** | Lazy loading (names only) | All skills in context |
-| **Tools** | 1 simple tool | Built into Claude |
-
-## 📖 Documentation
-
-### Project Documentation
-- [Quick Start Guide](./QUICK_START.md) - Get running in 5 minutes
-- [Full Documentation](./README.md) - Comprehensive guide
-- [Contributing Guidelines](./CONTRIBUTING.md) - How to contribute
-- [Code of Conduct](./CODE_OF_CONDUCT.md) - Community standards
-- [Security Policy](./SECURITY.md) - Security and vulnerability reporting
-- [Changelog](./CHANGELOG.md) - Version history and changes
-
-### External Resources
-- [MCP Documentation](https://modelcontextprotocol.io/) - MCP protocol info
-- [Claude Skills Docs](https://docs.claude.com/en/docs/claude-code/skills) - Official skills format
-
-## 🛠️ Troubleshooting
-
-### Server Not Starting
-
-```bash
-# Check Node version (should be 18+)
-node --version
-
-# Rebuild
-npm run build
-
-# Check compiled output exists
-ls dist/index.js
-```
-
-### Skills Not Found
-
-```bash
-# Check which directory is being used
-# (shown in server startup logs)
-
-# Verify skills directory exists
-ls -la ~/.claude/skills/
-
-# Check SKILL.md format
-cat ~/.claude/skills/my-skill/SKILL.md
-```
-
-### YAML Parsing Errors
-
-- Ensure frontmatter starts with `---\n`
-- Ensure frontmatter ends with `\n---\n`
-- Check YAML syntax (no tabs, proper format)
-- Verify `name` and `description` fields exist
 
 ## ❓ FAQ
 
-### General Questions
-
 **Q: What MCP clients are supported?**
-A: Local Skills MCP works with any MCP-compatible client including Claude Code, Claude Desktop, Cline, Continue.dev, and any custom agent that implements the Model Context Protocol.
+A: Any MCP-compatible client: Claude Code, Claude Desktop, Cline, Continue.dev, or custom agents.
 
 **Q: How is this different from Claude's built-in skills?**
-A: See the [comparison table](#-differences-from-built-in-skills). Key differences: Local Skills MCP aggregates from multiple directories, works with any MCP client (not just Claude), and gives you explicit control over skill invocation with lazy loading for better context efficiency.
+A: Works with any MCP client (not just Claude), aggregates from multiple directories, explicit invocation control, and better context efficiency via lazy loading.
 
-**Q: Can I use my existing Claude skills?**
-A: Yes! Local Skills MCP automatically aggregates skills from `~/.claude/skills/` along with other directories. Your existing skills work seamlessly.
+**Q: Can I use existing Claude skills?**
+A: Yes! Auto-aggregates from `~/.claude/skills/` along with other directories.
 
-**Q: Do I need to restart my MCP client after adding new skills?**
-A: Yes, currently you need to restart the MCP client/server for new skills to be discovered. Hot reloading is planned for future releases.
+**Q: Do I need to restart after adding skills?**
+A: Yes, currently requires restart. Hot reloading planned for future releases.
 
-**Q: Can I share my skills with my team?**
-A: Absolutely! Skills are just markdown files with YAML frontmatter. Share them via git repositories, shared directories, or any file sharing method. Set `SKILLS_DIR` to point to a shared location.
-
-### Technical Questions
-
-**Q: How much context window does this consume?**
-A: Minimal! Only skill names and descriptions (~20-50 tokens per skill) are visible initially. Full skill content loads only when invoked, preserving 95%+ of your context window.
+**Q: How much context does this consume?**
+A: Minimal! Only names/descriptions initially (~50 tokens/skill). Full content loads on-demand, preserving 95%+ of context.
 
 **Q: Can I use multiple skill directories?**
-A: Yes! The server automatically aggregates from `~/.claude/skills/`, `./.claude/skills/`, `./skills`, and any custom path set via the `SKILLS_DIR` environment variable.
+A: Yes! Auto-aggregates from `~/.claude/skills/`, `./.claude/skills/`, `./skills`, and `$SKILLS_DIR`.
 
-**Q: What happens if I have duplicate skill names?**
-A: Skills from later directories in the aggregation order override earlier ones. Order: `~/.claude/skills` → `./.claude/skills` → `./skills` → `$SKILLS_DIR`.
+**Q: What if I have duplicate skill names?**
+A: Later directories override earlier ones: `~/.claude/skills` → `./.claude/skills` → `./skills` → `$SKILLS_DIR`.
 
-**Q: Can I use this with local LLMs (Ollama, LM Studio, etc.)?**
-A: Yes! As long as your local LLM setup supports MCP, you can use Local Skills MCP. The skills are just structured prompts that work with any language model.
+**Q: Works with local LLMs (Ollama, LM Studio)?**
+A: Yes! Works with any MCP-compatible LLM setup. Skills are structured prompts that work with any model.
 
-**Q: Does this work offline?**
-A: Yes! Local Skills MCP runs entirely on your local filesystem. No internet connection required (though your LLM might need one depending on which model you use).
+**Q: Works offline?**
+A: Yes! Runs entirely on local filesystem (though your LLM may need internet depending on the model).
 
-### Skill Creation
-
-**Q: How do I create a good skill?**
-A: Follow the [SKILL.md format](#-skillmd-format) and [best practices](#writing-effective-descriptions). Include clear descriptions with trigger keywords, specific instructions, and examples.
-
-**Q: Can skills include code examples?**
-A: Yes! Skills are markdown files, so you can include code blocks, tables, links, and any other markdown formatting.
-
-**Q: What's the maximum skill size?**
-A: No hard limit, but keep skills focused. Very large skills consume more context when loaded. Consider breaking large skills into smaller, specialized ones.
-
-**Q: Can a skill invoke another skill?**
-A: Skills are independent prompt instructions. However, you can reference other skills in your skill content and suggest the AI use them in sequence.
-
-### Installation & Configuration
-
-**Q: Do I need to install globally?**
-A: No. You can install globally (`npm install -g`), locally, or use direct paths. See [Installation](#-installation) for all options.
-
-**Q: Can I use this in a Docker container?**
-A: Yes! Just ensure Node.js 18+ is installed and mount your skills directories as volumes.
-
-**Q: How do I update to the latest version?**
-A: Run `npm update -g local-skills-mcp` (if installed globally) or `git pull && npm install` (if cloned). Then restart your MCP client.
-
-**Q: Where are the logs?**
-A: The server logs to stderr. Check your MCP client's logs to see server output. Most clients log to `~/.config/[client-name]/logs/`.
-
-### Community & Support
+**Q: How to create a good skill?**
+A: Follow [SKILL.md format](#-skillmd-format). Use clear descriptions with trigger keywords, specific instructions, and examples.
 
 **Q: Where can I get help?**
-A: Open an [issue on GitHub](https://github.com/moscaverd/local-skills-mcp/issues) or check existing issues for solutions.
+A: Open an [issue on GitHub](https://github.com/moscaverd/local-skills-mcp/issues).
 
-**Q: Can I contribute skills to the project?**
-A: Yes! We welcome skill contributions. See [Contributing](#-contributing) for guidelines. Consider creating a community skills repository.
-
-**Q: Is there a skill marketplace?**
-A: Not yet, but we're exploring this! For now, share skills via GitHub repos or gists.
-
-**Q: How can I support this project?**
-A: See [Support This Project](#-support-this-project) for ways to help, including sponsorship, contributions, and sharing with others.
+**More:** See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [CHANGELOG.md](CHANGELOG.md)
 
 ## 🤝 Contributing
 
-Contributions are welcome! We appreciate your help in making Local Skills MCP better.
-
-**Please read [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.**
+Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 Quick start:
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes and test them
-4. Commit your changes (`git commit -m 'Add amazing feature'`)
-5. Push to the branch (`git push origin feature/amazing-feature`)
-6. Open a Pull Request
+2. Create your feature branch
+3. Make your changes and test
+4. Commit and push
+5. Open a Pull Request
 
-Please note that this project is released with a [Code of Conduct](CODE_OF_CONDUCT.md). By participating in this project you agree to abide by its terms.
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-**Copyright © 2025 KDPA**
-
-## 🙏 Acknowledgments
-
-- Built with the [Model Context Protocol SDK](https://github.com/modelcontextprotocol/sdk)
-- Inspired by [Claude Skills](https://docs.claude.com/en/docs/claude-code/skills)
-- Uses [YAML](https://yaml.org/) for frontmatter parsing
-
-## 📊 Version History
-
-### v0.1.0 (First Public Release) 🎉
-This is a **proof of concept** release showcasing universal LLM/agent skill management via MCP.
-
-**Key Features:**
-- Universal compatibility with any MCP client (Claude, Cline, custom agents)
-- Context-efficient lazy loading (preserves 95%+ of context window)
-- Single tool design with dynamic skill discovery
-- Multi-directory skill aggregation
-- Zero-configuration setup
-- Complete open source best practices
-
-**Technical:**
-- Version centralized in package.json (single source of truth)
-- TypeScript with Node.js 18+
-- Standard SKILL.md format with YAML frontmatter
-
-See [CHANGELOG.md](CHANGELOG.md) for complete details.
+Note: This project follows a [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## 💖 Support This Project
 
-If you find Local Skills MCP useful, please consider supporting its development! Your sponsorship helps maintain and improve this project.
+If you find Local Skills MCP useful, please consider supporting its development!
 
 <div align="center">
 
@@ -808,17 +264,17 @@ If you find Local Skills MCP useful, please consider supporting its development!
 
 **Ways to support:**
 - ⭐ Star this repository
-- 💰 Become a sponsor on [GitHub Sponsors](https://github.com/sponsors/moscaverd)
-- ☕ [Buy me a coffee](https://buymeacoffee.com/moscaverd)
+- 💰 Sponsor via the badges above
 - 🐛 Report bugs and suggest features
 - 📝 Contribute code or documentation
-- 🔄 Share with others who might find it useful
 
-Your support enables:
-- 🚀 New features and improvements
-- 🐛 Bug fixes and maintenance
-- 📚 Better documentation
-- 💬 Community support
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) file. **Copyright © 2025 KDPA**
+
+## 🙏 Acknowledgments
+
+Built with [Model Context Protocol SDK](https://github.com/modelcontextprotocol/sdk) • Inspired by [Claude Skills](https://docs.claude.com/en/docs/claude-code/skills)
 
 ---
 
