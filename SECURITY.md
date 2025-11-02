@@ -6,8 +6,8 @@ We release patches for security vulnerabilities for the following versions:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 2.x.x   | :white_check_mark: |
-| < 2.0   | :x:                |
+| 0.1.x   | :white_check_mark: |
+| < 0.1   | :x:                |
 
 ## Reporting a Vulnerability
 
@@ -87,7 +87,7 @@ When using Local Skills MCP:
 ## Security Updates
 
 Security updates will be:
-- Released as patch versions (e.g., 2.2.1)
+- Released as patch versions (e.g., 0.1.1)
 - Documented in CHANGELOG.md
 - Announced in the release notes
 - Tagged with [SECURITY] in commit messages
