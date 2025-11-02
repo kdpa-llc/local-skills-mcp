@@ -4,7 +4,7 @@
 
 **Enable any LLM or AI agent to utilize expert skills from your local filesystem via MCP**
 
-[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/moscaverd/local-skills)
+[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/moscaverd/local-skills-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-purple.svg)](https://modelcontextprotocol.io/)
@@ -54,14 +54,14 @@ A **universal** Model Context Protocol (MCP) server that enables **any LLM or AI
 **Easiest way - Install from GitHub:**
 
 ```bash
-npm install -g github:moscaverd/local-skills
+npm install -g github:moscaverd/local-skills-mcp
 ```
 
 **Or clone and build:**
 
 ```bash
-git clone https://github.com/moscaverd/local-skills.git
-cd local-skills
+git clone https://github.com/moscaverd/local-skills-mcp.git
+cd local-skills-mcp
 npm install
 ```
 
@@ -92,7 +92,7 @@ Add to `~/.config/claude-code/mcp.json` (or Claude Desktop's config):
   "mcpServers": {
     "local-skills": {
       "command": "node",
-      "args": ["/absolute/path/to/local-skills/dist/index.js"]
+      "args": ["/absolute/path/to/local-skills-mcp/dist/index.js"]
     }
   }
 }
@@ -104,7 +104,7 @@ Add to `~/.config/claude-code/mcp.json` (or Claude Desktop's config):
   "mcpServers": {
     "local-skills": {
       "command": "node",
-      "args": ["~/mcp-servers/local-skills/node_modules/local-skills-mcp/dist/index.js"]
+      "args": ["~/mcp-servers/local-skills-mcp/node_modules/local-skills-mcp/dist/index.js"]
     }
   }
 }
@@ -208,7 +208,7 @@ The AI sees all available skills in the tool description automatically and retri
 No cloning required! Install directly from GitHub:
 
 ```bash
-npm install -g github:moscaverd/local-skills
+npm install -g github:moscaverd/local-skills-mcp
 ```
 
 Then use the `local-skills-mcp` command in your MCP configuration.
@@ -216,16 +216,16 @@ Then use the `local-skills-mcp` command in your MCP configuration.
 **Or** install to a specific directory without global install:
 
 ```bash
-npm install github:moscaverd/local-skills --prefix ~/mcp-servers/local-skills
+npm install github:moscaverd/local-skills-mcp --prefix ~/mcp-servers/local-skills-mcp
 ```
 
-Then use: `node ~/mcp-servers/local-skills/node_modules/local-skills-mcp/dist/index.js`
+Then use: `node ~/mcp-servers/local-skills-mcp/node_modules/local-skills-mcp/dist/index.js`
 
 ### Method 2: Clone and Build (For Development)
 
 ```bash
-git clone https://github.com/moscaverd/local-skills.git
-cd local-skills
+git clone https://github.com/moscaverd/local-skills-mcp.git
+cd local-skills-mcp
 npm install
 npm run build
 ```
@@ -237,7 +237,7 @@ Then use the direct path in your MCP configuration (see Configuration section be
 After cloning, link it globally:
 
 ```bash
-cd local-skills
+cd local-skills-mcp
 npm install
 npm link
 ```
@@ -315,7 +315,7 @@ If cloned locally:
 ```json
 {
   "command": "node",
-  "args": ["/absolute/path/to/local-skills/dist/index.js"]
+  "args": ["/absolute/path/to/local-skills-mcp/dist/index.js"]
 }
 ```
 
@@ -337,7 +337,7 @@ With local path:
 ```json
 {
   "command": "node",
-  "args": ["/absolute/path/to/local-skills/dist/index.js"],
+  "args": ["/absolute/path/to/local-skills-mcp/dist/index.js"],
   "env": {
     "SKILLS_DIR": "/custom/path/to/skills"
   }
