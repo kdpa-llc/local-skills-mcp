@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "local-skills": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/local-skills-mcp/dist/index.js"
+      ],
+      "env": {
+        "SKILLS_DIR": "/absolute/path/to/skills"
+      }
+    }
+  }
+}
