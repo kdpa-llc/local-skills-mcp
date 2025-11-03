@@ -213,12 +213,12 @@ git commit -m "Add my-skill for project-specific guidance"
 
 **Global install (recommended)**:
 ```bash
-npm install -g github:moscaverd/local-skills-mcp
+npm install -g github:kdpa-llc/local-skills-mcp
 ```
 
 **Local install**:
 ```bash
-npm install github:moscaverd/local-skills-mcp --prefix ~/mcp-servers/local-skills
+npm install github:kdpa-llc/local-skills-mcp --prefix ~/mcp-servers/local-skills
 ```
 
 ### Configuration

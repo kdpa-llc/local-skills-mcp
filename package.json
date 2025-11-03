@@ -33,11 +33,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/moscaverd/local-skills-mcp.git"
+    "url": "git+https://github.com/kdpa-llc/local-skills-mcp.git"
   },
-  "homepage": "https://github.com/moscaverd/local-skills-mcp#readme",
+  "homepage": "https://github.com/kdpa-llc/local-skills-mcp#readme",
   "bugs": {
-    "url": "https://github.com/moscaverd/local-skills-mcp/issues"
+    "url": "https://github.com/kdpa-llc/local-skills-mcp/issues"
   },
   "engines": {
     "node": ">=18.0.0"
