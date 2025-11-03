@@ -262,6 +262,32 @@ Content`
       expect(skills).toEqual(['valid-skill']);
     });
 
+    it('should skip non-directory entries in skills folder', async () => {
+      // Create a valid skill
+      const skillPath = path.join(tempDir, 'valid-skill');
+      await fs.mkdir(skillPath, { recursive: true });
+      await fs.writeFile(
+        path.join(skillPath, 'SKILL.md'),
+        `---
+name: valid-skill
+description: Valid skill
+---
+
+Content`
+      );
+
+      // Create some files (not directories) in the skills folder
+      await fs.writeFile(path.join(tempDir, 'readme.txt'), 'This is a file, not a directory');
+      await fs.writeFile(path.join(tempDir, 'config.json'), '{}');
+      await fs.writeFile(path.join(tempDir, '.gitignore'), '*.tmp');
+
+      skillLoader = new SkillLoader([tempDir]);
+      const skills = await skillLoader.discoverSkills();
+
+      // Should only find the valid skill directory, not the files
+      expect(skills).toEqual(['valid-skill']);
+    });
+
     it('should handle non-existent directories gracefully', async () => {
       const nonExistentDir = path.join(tempDir, 'does-not-exist');
       skillLoader = new SkillLoader([nonExistentDir]);

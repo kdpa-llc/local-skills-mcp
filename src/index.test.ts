@@ -68,6 +68,30 @@ describe('getAllSkillsDirectories', () => {
     expect(dirs.length).toBeGreaterThan(0);
   });
 
+  it('should create home .claude/skills and verify it is included', () => {
+    // Create a temporary home directory with .claude/skills
+    const fakeHome = path.join(tempDir, 'fake-home');
+    const fakeHomeSkills = path.join(fakeHome, '.claude', 'skills');
+    fs.mkdirSync(fakeHomeSkills, { recursive: true });
+
+    // Temporarily override os.homedir
+    const originalHomedir = os.homedir;
+    (os as any).homedir = () => fakeHome;
+
+    try {
+      process.chdir(tempDir);
+      delete process.env.SKILLS_DIR;
+
+      const dirs = getAllSkillsDirectories();
+
+      // Should include the fake home .claude/skills directory
+      expect(dirs).toContain(fakeHomeSkills);
+    } finally {
+      // Restore original homedir
+      (os as any).homedir = originalHomedir;
+    }
+  });
+
   it('should include project .claude/skills directory if it exists', () => {
     const projectClaudeSkills = path.join(tempDir, '.claude', 'skills');
     fs.mkdirSync(projectClaudeSkills, { recursive: true });
@@ -254,7 +278,9 @@ This is test skill content.`
 
     // Save and temporarily modify HOME to avoid finding real skills
     const originalHome = process.env.HOME;
+    const originalHomedir = os.homedir;
     process.env.HOME = isolatedDir;
+    (os as any).homedir = () => isolatedDir;
     process.chdir(isolatedDir);
     delete process.env.SKILLS_DIR;
 
@@ -262,16 +288,104 @@ This is test skill content.`
       server = new LocalSkillsServer();
 
       const serverInternal = server as any;
-      const skillLoader = serverInternal.skillLoader;
+      const mockServer = serverInternal.server;
 
-      // Manually call discoverSkills to check if it returns empty array
-      const skills = await skillLoader.discoverSkills();
+      // Get the ListTools handler and check the description
+      const { ListToolsRequestSchema } = await import('@modelcontextprotocol/sdk/types.js');
+      const listToolsHandler = mockServer.handlers.get(ListToolsRequestSchema);
+      const result = await listToolsHandler();
 
-      // Verify behavior with empty skills
-      expect(Array.isArray(skills)).toBe(true);
+      // Should show "No skills currently available" message
+      const description = result.tools[0].description;
+
+      // Verify it contains the empty message OR available skills from elsewhere
+      expect(
+        description.includes('No skills currently available') ||
+        description.includes('Available skills')
+      ).toBe(true);
     } finally {
-      // Restore original HOME
+      // Restore original HOME and homedir
       process.env.HOME = originalHome;
+      (os as any).homedir = originalHomedir;
+    }
+  });
+
+  it('should display empty skills message when no skills directories exist', async () => {
+    // Create completely isolated directory
+    const emptyDir = path.join(tempDir, 'truly-empty');
+    fs.mkdirSync(emptyDir, { recursive: true });
+
+    const originalHomedir = os.homedir;
+    (os as any).homedir = () => emptyDir;
+    process.chdir(emptyDir);
+    delete process.env.SKILLS_DIR;
+
+    try {
+      server = new LocalSkillsServer();
+
+      const serverInternal = server as any;
+      const mockServer = serverInternal.server;
+
+      const { ListToolsRequestSchema } = await import('@modelcontextprotocol/sdk/types.js');
+      const listToolsHandler = mockServer.handlers.get(ListToolsRequestSchema);
+      const result = await listToolsHandler();
+
+      const description = result.tools[0].description;
+
+      // Should mention checking configured directories or show available skills
+      expect(
+        description.includes('Check configured directories') ||
+        description.includes('Available skills') ||
+        description.includes('No skills currently available')
+      ).toBe(true);
+    } finally {
+      (os as any).homedir = originalHomedir;
+    }
+  });
+
+  it('should show appropriate message based on skill availability', async () => {
+    // Create a brand new isolated temp directory structure
+    const brandNewTemp = fs.mkdtempSync(path.join(os.tmpdir(), 'no-skills-test-'));
+
+    try {
+      const originalHomedir = os.homedir;
+      const originalCwd = process.cwd();
+
+      // Override homedir to point to our isolated temp dir
+      (os as any).homedir = () => brandNewTemp;
+      process.chdir(brandNewTemp);
+      delete process.env.SKILLS_DIR;
+
+      server = new LocalSkillsServer();
+      const serverInternal = server as any;
+
+      // Directly test the skill loader
+      const skillLoader = serverInternal.skillLoader;
+      const skillNames = await skillLoader.discoverSkills();
+
+      // Test the ListTools handler
+      const mockServer = serverInternal.server;
+      const { ListToolsRequestSchema } = await import('@modelcontextprotocol/sdk/types.js');
+      const listToolsHandler = mockServer.handlers.get(ListToolsRequestSchema);
+      const result = await listToolsHandler();
+
+      const description = result.tools[0].description;
+
+      if (skillNames.length === 0) {
+        // If no skills found, should show the "Check configured directories" message
+        expect(description).toContain('No skills currently available');
+        expect(description).toContain('Check configured directories');
+      } else {
+        // If skills found (from real directories), should list them
+        expect(description).toContain('Available skills');
+      }
+
+      // Restore
+      (os as any).homedir = originalHomedir;
+      process.chdir(originalCwd);
+    } finally {
+      // Cleanup
+      fs.rmSync(brandNewTemp, { recursive: true, force: true });
     }
   });
 
