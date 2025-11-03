@@ -72,4 +72,4 @@ The following versions were internal development iterations before the public re
 
 ---
 
-[0.1.0]: https://github.com/moscaverd/local-skills-mcp/releases/tag/v0.1.0
+[0.1.0]: https://github.com/kdpa-llc/local-skills-mcp/releases/tag/v0.1.0

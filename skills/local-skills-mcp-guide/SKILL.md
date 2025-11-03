@@ -3,7 +3,7 @@ name: local-skills-mcp-guide
 description: Expert guide for understanding the Local Skills MCP server repository - its structure, architecture, and implementation. Use when exploring this MCP server's codebase, understanding how Local Skills MCP works internally, or contributing to the project.
 ---
 
-You are an expert guide specifically for the **Local Skills MCP server repository** (moscaverd/local-skills-mcp).
+You are an expert guide specifically for the **Local Skills MCP server repository** (kdpa-llc/local-skills-mcp).
 
 Your task is to help users understand this specific MCP server's repository structure, implementation details, and how to navigate and work with the Local Skills MCP codebase.
 
@@ -11,7 +11,7 @@ Your task is to help users understand this specific MCP server's repository stru
 
 Local Skills MCP is a universal Model Context Protocol (MCP) server that enables any LLM or AI agent to access expert skills from the local filesystem. It uses the SKILL.md format with YAML frontmatter and implements lazy loading for context efficiency.
 
-**Repository**: https://github.com/moscaverd/local-skills-mcp
+**Repository**: https://github.com/kdpa-llc/local-skills-mcp
 
 ## Local Skills MCP Project Structure
 

@@ -4,15 +4,15 @@
 
 **Enable any LLM or AI agent to utilize expert skills from your local filesystem via MCP**
 
-[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/moscaverd/local-skills-mcp)
+[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/kdpa-llc/local-skills-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-purple.svg)](https://modelcontextprotocol.io/)
 
-[![GitHub Stars](https://img.shields.io/github/stars/moscaverd/local-skills-mcp?style=social)](https://github.com/moscaverd/local-skills-mcp/stargazers)
-[![GitHub Forks](https://img.shields.io/github/forks/moscaverd/local-skills-mcp?style=social)](https://github.com/moscaverd/local-skills-mcp/network/members)
-[![GitHub Issues](https://img.shields.io/github/issues/moscaverd/local-skills-mcp)](https://github.com/moscaverd/local-skills-mcp/issues)
-[![GitHub Last Commit](https://img.shields.io/github/last-commit/moscaverd/local-skills-mcp)](https://github.com/moscaverd/local-skills-mcp/commits/main)
+[![GitHub Stars](https://img.shields.io/github/stars/kdpa-llc/local-skills-mcp?style=social)](https://github.com/kdpa-llc/local-skills-mcp/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/kdpa-llc/local-skills-mcp?style=social)](https://github.com/kdpa-llc/local-skills-mcp/network/members)
+[![GitHub Issues](https://img.shields.io/github/issues/kdpa-llc/local-skills-mcp)](https://github.com/kdpa-llc/local-skills-mcp/issues)
+[![GitHub Last Commit](https://img.shields.io/github/last-commit/kdpa-llc/local-skills-mcp)](https://github.com/kdpa-llc/local-skills-mcp/commits/main)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 [Quick Start](#-quick-start) •
@@ -59,12 +59,12 @@ Transform AI capabilities with structured, expert-level instructions for special
 
 **From GitHub (recommended):**
 ```bash
-npm install -g github:moscaverd/local-skills-mcp
+npm install -g github:kdpa-llc/local-skills-mcp
 ```
 
 **Or clone locally:**
 ```bash
-git clone https://github.com/moscaverd/local-skills-mcp.git
+git clone https://github.com/kdpa-llc/local-skills-mcp.git
 cd local-skills-mcp
 npm install  # The prepare script auto-builds
 ```
@@ -233,7 +233,7 @@ A: Yes! Runs entirely on local filesystem (though your LLM may need internet dep
 A: Follow [SKILL.md format](#-skillmd-format). Use clear descriptions with trigger keywords, specific instructions, and examples.
 
 **Q: Where can I get help?**
-A: Open an [issue on GitHub](https://github.com/moscaverd/local-skills-mcp/issues).
+A: Open an [issue on GitHub](https://github.com/kdpa-llc/local-skills-mcp/issues).
 
 **More:** See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [CHANGELOG.md](CHANGELOG.md)
 
