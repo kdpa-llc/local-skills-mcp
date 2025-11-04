@@ -23,7 +23,7 @@ const VERSION = packageJson.version;
  * Get all skills directories to aggregate from
  * Includes custom SKILLS_DIR if set, plus standard Claude locations
  */
-function getAllSkillsDirectories(): string[] {
+export function getAllSkillsDirectories(): string[] {
   const directories: string[] = [];
 
   // Always include standard Claude locations if they exist
@@ -57,7 +57,7 @@ function getAllSkillsDirectories(): string[] {
 
 const SKILLS_DIRS = getAllSkillsDirectories();
 
-class LocalSkillsServer {
+export class LocalSkillsServer {
   private server: Server;
   private skillLoader: SkillLoader;
 
@@ -193,9 +193,11 @@ class LocalSkillsServer {
   }
 }
 
-// Start the server
-const server = new LocalSkillsServer();
-server.run().catch((error) => {
-  console.error('Fatal error running server:', error);
-  process.exit(1);
-});
+// Start the server only if this module is being run directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const server = new LocalSkillsServer();
+  server.run().catch((error) => {
+    console.error('Fatal error running server:', error);
+    process.exit(1);
+  });
+}
