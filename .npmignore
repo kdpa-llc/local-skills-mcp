@@ -13,6 +13,9 @@ tsconfig.json
 # Local settings
 .claude/
 
+# AI development files
+CLAUDE.md
+
 # Development files
 .vscode/
 .idea/
@@ -37,3 +40,6 @@ test/
 *.swo
 *~
 .DS_Store
+
+# Temporary files
+.tmp/
