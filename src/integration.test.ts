@@ -153,10 +153,12 @@ It provides different guidance.`
       const response = await client.listTools();
 
       const getSkillTool = response.tools.find(t => t.name === 'get_skill');
+      expect(getSkillTool).toBeDefined();
+      expect(getSkillTool?.description).toBeDefined();
       // Should contain either test skills or available skills message
       expect(
-        getSkillTool?.description.includes('test-skill-1') ||
-        getSkillTool?.description.includes('Available skills')
+        getSkillTool!.description!.includes('test-skill-1') ||
+        getSkillTool!.description!.includes('Available skills')
       ).toBe(true);
     });
 
@@ -181,7 +183,7 @@ It provides different guidance.`
       // Discover available skills
       const listResponse = await client.listTools();
       const getSkillTool = listResponse.tools.find(t => t.name === 'get_skill');
-      const match = getSkillTool?.description.match(/Available skills: ([^\n]+)/);
+      const match = getSkillTool?.description?.match(/Available skills: ([^\n]+)/);
       availableSkills = match ? match[1].split(', ').map(s => s.trim()) : [];
     });
 
@@ -202,9 +204,9 @@ It provides different guidance.`
       });
 
       expect(response.content).toBeDefined();
-      expect(response.content.length).toBeGreaterThan(0);
+      expect((response.content as any[]).length).toBeGreaterThan(0);
 
-      const textContent = response.content[0];
+      const textContent = (response.content as any[])[0];
       expect(textContent.type).toBe('text');
       expect((textContent as any).text).toContain(skillToTest);
       expect((textContent as any).text).toContain('# Skill:');
@@ -234,8 +236,8 @@ It provides different guidance.`
         },
       });
 
-      const text1 = (response1.content[0] as any).text;
-      const text2 = (response2.content[0] as any).text;
+      const text1 = ((response1.content as any[])[0] as any).text;
+      const text2 = ((response2.content as any[])[0] as any).text;
 
       expect(text1).toContain(skill1);
       expect(text1).not.toContain(skill2);
@@ -270,7 +272,7 @@ It provides different guidance.`
       });
 
       // Both should return the same content
-      expect((response1.content[0] as any).text).toBe((response2.content[0] as any).text);
+      expect(((response1.content as any[])[0] as any).text).toBe(((response2.content as any[])[0] as any).text);
     });
 
     it('should include source directory in skill output', async () => {
@@ -289,7 +291,7 @@ It provides different guidance.`
         },
       });
 
-      const text = (response.content[0] as any).text;
+      const text = ((response.content as any[])[0] as any).text;
       expect(text).toContain('**Source:**');
       // Should contain some path
       expect(text).toMatch(/\/.*skills/);
@@ -311,7 +313,7 @@ It provides different guidance.`
       });
 
       expect(response.content).toBeDefined();
-      const text = (response.content[0] as any).text;
+      const text = ((response.content as any[])[0] as any).text;
       expect(text).toContain('Error');
       expect(text).toContain('not found');
     });
@@ -323,7 +325,7 @@ It provides different guidance.`
       });
 
       expect(response.content).toBeDefined();
-      const text = (response.content[0] as any).text;
+      const text = ((response.content as any[])[0] as any).text;
       expect(text).toContain('Error');
       expect(text).toContain('skill_name is required');
     });
@@ -335,7 +337,7 @@ It provides different guidance.`
       });
 
       expect(response.content).toBeDefined();
-      const text = (response.content[0] as any).text;
+      const text = ((response.content as any[])[0] as any).text;
       expect(text).toContain('Error');
       expect(text).toContain('Unknown tool');
     });
@@ -368,7 +370,7 @@ It provides different guidance.`
       expect(responses).toHaveLength(3);
       responses.forEach(response => {
         expect(response.content).toBeDefined();
-        expect(response.content.length).toBeGreaterThan(0);
+        expect((response.content as any[]).length).toBeGreaterThan(0);
       });
     });
 
@@ -381,7 +383,7 @@ It provides different guidance.`
         });
 
         expect(response.content).toBeDefined();
-        const text = (response.content[0] as any).text;
+        const text = ((response.content as any[])[0] as any).text;
         expect(text).toContain(skillName);
       }
     });
@@ -399,9 +401,11 @@ It provides different guidance.`
       const tool = response.tools.find(t => t.name === 'get_skill');
 
       // Should have available skills or message about no skills
+      expect(tool).toBeDefined();
+      expect(tool?.description).toBeDefined();
       expect(
-        tool?.description.includes('Available skills') ||
-        tool?.description.includes('No skills currently available')
+        tool!.description!.includes('Available skills') ||
+        tool!.description!.includes('No skills currently available')
       ).toBe(true);
     });
 
@@ -409,7 +413,7 @@ It provides different guidance.`
       // Get list of available skills
       const listResponse = await client.listTools();
       const tool = listResponse.tools.find(t => t.name === 'get_skill');
-      const match = tool?.description.match(/Available skills: ([^\n]+)/);
+      const match = tool?.description?.match(/Available skills: ([^\n]+)/);
 
       if (match) {
         const skills = match[1].split(', ').map(s => s.trim());
@@ -421,7 +425,7 @@ It provides different guidance.`
             arguments: { skill_name: skillName },
           });
 
-          const text = (response.content[0] as any).text;
+          const text = ((response.content as any[])[0] as any).text;
           expect(text).toContain(skillName);
           expect(text).toContain('# Skill:');
         }
@@ -459,11 +463,12 @@ It provides different guidance.`
         const response = await emptyClient.listTools();
         const tool = response.tools.find(t => t.name === 'get_skill');
         expect(tool).toBeDefined();
+        expect(tool?.description).toBeDefined();
 
         // But description should indicate no skills
         expect(
-          tool?.description.includes('No skills currently available') ||
-          tool?.description.includes('Available skills')
+          tool!.description!.includes('No skills currently available') ||
+          tool!.description!.includes('Available skills')
         ).toBe(true);
 
         await emptyClient.close();
@@ -485,7 +490,7 @@ It provides different guidance.`
       // Discover available skills
       const listResponse = await client.listTools();
       const getSkillTool = listResponse.tools.find(t => t.name === 'get_skill');
-      const match = getSkillTool?.description.match(/Available skills: ([^\n]+)/);
+      const match = getSkillTool?.description?.match(/Available skills: ([^\n]+)/);
       availableSkills = match ? match[1].split(', ').map(s => s.trim()) : [];
     });
 
@@ -503,7 +508,7 @@ It provides different guidance.`
         arguments: { skill_name: skillToTest },
       });
 
-      const text = (response.content[0] as any).text;
+      const text = ((response.content as any[])[0] as any).text;
 
       // Should have header
       expect(text).toContain(`# Skill: ${skillToTest}`);
@@ -532,7 +537,7 @@ It provides different guidance.`
         arguments: { skill_name: skillToTest },
       });
 
-      const text = (response.content[0] as any).text;
+      const text = ((response.content as any[])[0] as any).text;
 
       // Should be well-structured markdown content
       expect(text.length).toBeGreaterThan(50);

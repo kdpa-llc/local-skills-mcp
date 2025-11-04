@@ -15,8 +15,9 @@
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:unit": "vitest run --exclude src/integration.test.ts",
-    "test:integration": "vitest run src/integration.test.ts"
+    "test:unit": "vitest run --exclude src/integration.test.ts --exclude src/e2e.test.ts",
+    "test:integration": "vitest run src/integration.test.ts",
+    "test:e2e": "vitest run src/e2e.test.ts"
   },
   "keywords": [
     "mcp",
