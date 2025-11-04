@@ -33,3 +33,9 @@ coverage/
 # Misc
 *.log
 .cache/
+
+# Temporary files
+.tmp/
+
+# AI development files
+CLAUDE.md
