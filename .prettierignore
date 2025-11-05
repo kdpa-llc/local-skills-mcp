@@ -1,0 +1,6 @@
+dist
+node_modules
+coverage
+*.min.js
+package-lock.json
+.tmp

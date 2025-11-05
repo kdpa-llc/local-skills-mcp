@@ -1,22 +1,26 @@
 #!/usr/bin/env node
 
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
   Tool,
-} from '@modelcontextprotocol/sdk/types.js';
-import path from 'path';
-import fs from 'fs';
-import os from 'os';
-import { fileURLToPath } from 'url';
-import { SkillLoader } from './skill-loader.js';
+} from "@modelcontextprotocol/sdk/types.js";
+import path from "path";
+import fs from "fs";
+import os from "os";
+import { fileURLToPath } from "url";
+import { SkillLoader } from "./skill-loader.js";
 
 // Get version from package.json (single source of truth)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf-8'));
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+const packageJson = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "../package.json"), "utf-8")
+);
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
 const VERSION = packageJson.version;
 
 /**
@@ -27,17 +31,17 @@ export function getAllSkillsDirectories(): string[] {
   const directories: string[] = [];
 
   // Always include standard Claude locations if they exist
-  const homeClaudeSkills = path.join(os.homedir(), '.claude', 'skills');
+  const homeClaudeSkills = path.join(os.homedir(), ".claude", "skills");
   if (fs.existsSync(homeClaudeSkills)) {
     directories.push(homeClaudeSkills);
   }
 
-  const projectClaudeSkills = path.join(process.cwd(), '.claude', 'skills');
+  const projectClaudeSkills = path.join(process.cwd(), ".claude", "skills");
   if (fs.existsSync(projectClaudeSkills)) {
     directories.push(projectClaudeSkills);
   }
 
-  const defaultSkills = path.join(process.cwd(), 'skills');
+  const defaultSkills = path.join(process.cwd(), "skills");
   if (fs.existsSync(defaultSkills)) {
     directories.push(defaultSkills);
   }
@@ -64,7 +68,8 @@ export class LocalSkillsServer {
   constructor() {
     this.server = new Server(
       {
-        name: 'local-skills-mcp',
+        name: "local-skills-mcp",
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         version: VERSION,
       },
       {
@@ -82,10 +87,11 @@ export class LocalSkillsServer {
 
   private setupErrorHandling(): void {
     this.server.onerror = (error) => {
-      console.error('[MCP Error]', error);
+      console.error("[MCP Error]", error);
     };
 
-    process.on('SIGINT', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+    process.on("SIGINT", async () => {
       await this.server.close();
       process.exit(0);
     });
@@ -100,30 +106,33 @@ export class LocalSkillsServer {
       // Build enhanced description for get_skill following Claude Skills best practices
       // Pattern: [What it does]. [Value proposition]. Use when [trigger conditions].
       let getSkillDescription =
-        'Loads specialized expert prompt instructions that transform your capabilities for specific tasks. ' +
-        'Each skill provides comprehensive guidance, proven methodologies, and domain-specific best practices. ' +
-        'Use when you need focused expertise, systematic approaches, or professional standards for any task that would benefit from specialized knowledge. ' +
-        'Invoke with the skill name to receive detailed instructions that enhance your problem-solving approach with structured, expert-level guidance.';
+        "Loads specialized expert prompt instructions that transform your capabilities for specific tasks. " +
+        "Each skill provides comprehensive guidance, proven methodologies, and domain-specific best practices. " +
+        "Use when you need focused expertise, systematic approaches, or professional standards for any task that would benefit from specialized knowledge. " +
+        "Invoke with the skill name to receive detailed instructions that enhance your problem-solving approach with structured, expert-level guidance.";
 
       if (skillNames.length > 0) {
-        getSkillDescription += `\n\nAvailable skills: ${skillNames.join(', ')}`;
+        getSkillDescription += `\n\nAvailable skills: ${skillNames.join(", ")}`;
       } else {
-        getSkillDescription += '\n\nNo skills currently available. Check configured directories: ' + SKILLS_DIRS.join(', ');
+        getSkillDescription +=
+          "\n\nNo skills currently available. Check configured directories: " +
+          SKILLS_DIRS.join(", ");
       }
 
       const tools: Tool[] = [
         {
-          name: 'get_skill',
+          name: "get_skill",
           description: getSkillDescription,
           inputSchema: {
-            type: 'object',
+            type: "object",
             properties: {
               skill_name: {
-                type: 'string',
-                description: 'The name of the skill to retrieve (e.g., "code-reviewer", "test-generator")',
+                type: "string",
+                description:
+                  'The name of the skill to retrieve (e.g., "code-reviewer", "test-generator")',
               },
             },
-            required: ['skill_name'],
+            required: ["skill_name"],
           },
         },
       ];
@@ -135,18 +144,19 @@ export class LocalSkillsServer {
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       try {
         switch (request.params.name) {
-          case 'get_skill':
+          case "get_skill":
             return await this.handleGetSkill(request.params.arguments);
 
           default:
             throw new Error(`Unknown tool: ${request.params.name}`);
         }
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         return {
           content: [
             {
-              type: 'text',
+              type: "text",
               text: `Error: ${errorMessage}`,
             },
           ],
@@ -155,12 +165,15 @@ export class LocalSkillsServer {
     });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async handleGetSkill(args: any) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const skillName = args?.skill_name;
     if (!skillName) {
-      throw new Error('skill_name is required');
+      throw new Error("skill_name is required");
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     const skill = await this.skillLoader.loadSkill(skillName);
 
     const output = [
@@ -177,8 +190,8 @@ export class LocalSkillsServer {
     return {
       content: [
         {
-          type: 'text',
-          text: output.join('\n'),
+          type: "text",
+          text: output.join("\n"),
         },
       ],
     };
@@ -188,8 +201,10 @@ export class LocalSkillsServer {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
     console.error(`Local Skills MCP Server v${VERSION} running on stdio`);
-    console.error(`Aggregating skills from ${SKILLS_DIRS.length} director${SKILLS_DIRS.length === 1 ? 'y' : 'ies'}:`);
-    SKILLS_DIRS.forEach(dir => console.error(`  - ${dir}`));
+    console.error(
+      `Aggregating skills from ${SKILLS_DIRS.length} director${SKILLS_DIRS.length === 1 ? "y" : "ies"}:`
+    );
+    SKILLS_DIRS.forEach((dir) => console.error(`  - ${dir}`));
   }
 }
 
@@ -197,7 +212,7 @@ export class LocalSkillsServer {
 if (import.meta.url === `file://${process.argv[1]}`) {
   const server = new LocalSkillsServer();
   server.run().catch((error) => {
-    console.error('Fatal error running server:', error);
+    console.error("Fatal error running server:", error);
     process.exit(1);
   });
 }
