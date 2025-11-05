@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Package built-in skills directory as base default for all MCP instances
+- Self-documenting capabilities: `local-skills-mcp-usage`, `local-skills-mcp-guide`, and `skill-creator` skills
+- Skills are now available immediately after installation with zero configuration
+
+### Changed
+- Directory aggregation priority updated to include package built-in skills as lowest priority (first in list)
+- Updated documentation to reflect new built-in skills feature
+
 ## [0.1.0] - 2025-11-01
 
 ### 🎉 First Public Release

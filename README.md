@@ -53,7 +53,7 @@ Transform AI capabilities with structured, expert-level instructions for special
 - **🌐 Universal** - Works with any MCP client (Claude Code, Desktop, Cline, Continue.dev, custom agents)
 - **🔄 Portable** - Write once, use across multiple AI systems and LLMs (Claude, GPT, Gemini, local models)
 - **⚡ Context Efficient** - Lazy loading: only skill names/descriptions load initially (~50 tokens/skill), full content on-demand
-- **🎯 Multi-Source** - Auto-aggregates from `~/.claude/skills`, `./.claude/skills`, `./skills`, and custom paths
+- **🎯 Multi-Source** - Auto-aggregates from package built-in skills, `~/.claude/skills`, `./.claude/skills`, `./skills`, and custom paths
 - **📦 Zero Config** - Works out-of-the-box with standard skill locations
 - **✨ Ultra Simple** - Single tool (`get_skill`) with dynamic skill discovery
 
@@ -110,7 +110,14 @@ Add to your MCP client configuration (e.g., `~/.config/claude-code/mcp.json`):
 
 **For other MCP clients:** Use the same command/args structure according to their MCP server setup.
 
-The server auto-aggregates from: `~/.claude/skills/`, `./.claude/skills/`, `./skills`, and `$SKILLS_DIR` (if set).
+The server auto-aggregates skills from multiple directories in this priority order (lowest to highest):
+1. Package built-in skills (includes self-documenting usage guides)
+2. `~/.claude/skills/` - Your global skills
+3. `./.claude/skills/` - Project-specific skills
+4. `./skills` - Default project skills
+5. `$SKILLS_DIR` - Custom directory (if set)
+
+Later directories override earlier ones, allowing you to customize built-in skills.
 
 ### Create & Use Skills
 
@@ -173,7 +180,9 @@ Claude uses language understanding to decide when to invoke skills—specific tr
 2. When you request a skill, AI invokes `get_skill`
 3. Full skill content loads with detailed instructions
 
-**Skill Aggregation:** Auto-aggregates from `~/.claude/skills/`, `./.claude/skills/`, `./skills`, and `$SKILLS_DIR` (if set). Later directories override duplicates.
+**Built-in Skills:** The package includes self-documenting skills that explain how to use Local Skills MCP and create new skills. These are available immediately after installation.
+
+**Skill Aggregation:** Auto-aggregates from package built-in skills, `~/.claude/skills/`, `./.claude/skills/`, `./skills`, and `$SKILLS_DIR` (if set). Later directories override duplicates.
 
 **Custom Directory:** Add via environment variable:
 
@@ -233,10 +242,13 @@ A: Yes, currently requires restart. Hot reloading planned for future releases.
 A: Minimal! Only names/descriptions initially (~50 tokens/skill). Full content loads on-demand, preserving 95%+ of context.
 
 **Q: Can I use multiple skill directories?**
-A: Yes! Auto-aggregates from `~/.claude/skills/`, `./.claude/skills/`, `./skills`, and `$SKILLS_DIR`.
+A: Yes! Auto-aggregates from package built-in skills, `~/.claude/skills/`, `./.claude/skills/`, `./skills`, and `$SKILLS_DIR`.
 
 **Q: What if I have duplicate skill names?**
-A: Later directories override earlier ones: `~/.claude/skills` → `./.claude/skills` → `./skills` → `$SKILLS_DIR`.
+A: Later directories override earlier ones: package built-in → `~/.claude/skills` → `./.claude/skills` → `./skills` → `$SKILLS_DIR`. This lets you customize built-in skills.
+
+**Q: What built-in skills are included?**
+A: The package includes three self-documenting skills: `local-skills-mcp-usage` (usage guide), `local-skills-mcp-guide` (comprehensive documentation), and `skill-creator` (skill authoring guide). These are available immediately after installation.
 
 **Q: Works with local LLMs (Ollama, LM Studio)?**
 A: Yes! Works with any MCP-compatible LLM setup. Skills are structured prompts that work with any model.

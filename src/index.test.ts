@@ -138,10 +138,12 @@ describe("getAllSkillsDirectories", () => {
     delete process.env.SKILLS_DIR;
 
     const dirs = getAllSkillsDirectories();
-    const expectedDefault = path.join(process.cwd(), "skills");
 
-    expect(dirs).toContain(expectedDefault);
+    // With the new implementation, package built-in skills should always be included
+    // The package skills directory should be present even when no other directories exist
     expect(dirs.length).toBeGreaterThan(0);
+    // The package skills path should include '/skills' at the end
+    expect(dirs.some((dir) => dir.endsWith("/skills"))).toBe(true);
   });
 
   it("should prioritize directories correctly", () => {
