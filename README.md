@@ -4,20 +4,20 @@
 
 **Enable any LLM or AI agent to utilize expert skills from your local filesystem via MCP**
 
-[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/kdpa-llc/local-skills-mcp)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
-[![MCP](https://img.shields.io/badge/MCP-Compatible-purple.svg)](https://modelcontextprotocol.io/)
+[![npm version][npm-version-badge]][npm-package]
+[![License: MIT][license-badge]][license]
+[![Node][node-badge]][nodejs]
+[![MCP][mcp-badge]][mcp-protocol]
 
-[![CI](https://github.com/kdpa-llc/local-skills-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/kdpa-llc/local-skills-mcp/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/kdpa-llc/local-skills-mcp/branch/main/graph/badge.svg)](https://codecov.io/gh/kdpa-llc/local-skills-mcp)
-[![CodeQL](https://github.com/kdpa-llc/local-skills-mcp/actions/workflows/codeql.yml/badge.svg)](https://github.com/kdpa-llc/local-skills-mcp/actions/workflows/codeql.yml)
+[![CI][ci-badge]][ci-workflow]
+[![codecov][codecov-badge]][codecov]
+[![CodeQL][codeql-badge]][codeql-workflow]
 
-[![GitHub Stars](https://img.shields.io/github/stars/kdpa-llc/local-skills-mcp?style=social)](https://github.com/kdpa-llc/local-skills-mcp/stargazers)
-[![GitHub Forks](https://img.shields.io/github/forks/kdpa-llc/local-skills-mcp?style=social)](https://github.com/kdpa-llc/local-skills-mcp/network/members)
-[![GitHub Issues](https://img.shields.io/github/issues/kdpa-llc/local-skills-mcp)](https://github.com/kdpa-llc/local-skills-mcp/issues)
-[![GitHub Last Commit](https://img.shields.io/github/last-commit/kdpa-llc/local-skills-mcp)](https://github.com/kdpa-llc/local-skills-mcp/commits/main)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![GitHub Stars][stars-badge]][stargazers]
+[![GitHub Forks][forks-badge]][network]
+[![GitHub Issues][issues-badge]][repo-issues]
+[![GitHub Last Commit][commit-badge]][commits]
+[![PRs Welcome][prs-badge]][contributing]
 
 [Quick Start](#-quick-start) •
 [Features](#-features) •
@@ -248,13 +248,13 @@ A: Yes! Runs entirely on local filesystem (though your LLM may need internet dep
 A: Follow [SKILL.md format](#-skillmd-format). Use clear descriptions with trigger keywords, specific instructions, and examples.
 
 **Q: Where can I get help?**
-A: Open an [issue on GitHub](https://github.com/kdpa-llc/local-skills-mcp/issues).
+A: Open an [issue on GitHub][repo-issues].
 
-**More:** See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [CHANGELOG.md](CHANGELOG.md)
+**More:** See [CONTRIBUTING.md][contributing], [SECURITY.md][security], [CHANGELOG.md][changelog]
 
 ## 🤝 Contributing
 
-Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions welcome! See [CONTRIBUTING.md][contributing] for guidelines.
 
 Quick start:
 
@@ -264,7 +264,7 @@ Quick start:
 4. Commit and push
 5. Open a Pull Request
 
-Note: This project follows a [Code of Conduct](CODE_OF_CONDUCT.md).
+Note: This project follows a [Code of Conduct][code-of-conduct].
 
 ## 💖 Support This Project
 
@@ -272,9 +272,9 @@ If you find Local Skills MCP useful, please consider supporting its development!
 
 <div align="center">
 
-[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-GitHub%20Sponsors-ea4aaa?logo=github)](https://github.com/sponsors/moscaverd)
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow?logo=buy-me-a-coffee)](https://buymeacoffee.com/moscaverd)
-[![PayPal](https://img.shields.io/badge/PayPal-donate-blue?logo=paypal)](https://paypal.me/moscaverd)
+[![GitHub Sponsors][sponsor-github-badge]][sponsor-github]
+[![Buy Me A Coffee][sponsor-coffee-badge]][sponsor-coffee]
+[![PayPal][sponsor-paypal-badge]][sponsor-paypal]
 
 </div>
 
@@ -287,11 +287,11 @@ If you find Local Skills MCP useful, please consider supporting its development!
 
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE) file. **Copyright © 2025 KDPA**
+MIT License - see [LICENSE][license-file] file. **Copyright © 2025 KDPA**
 
 ## 🙏 Acknowledgments
 
-Built with [Model Context Protocol SDK](https://github.com/modelcontextprotocol/sdk) • Inspired by [Claude Skills](https://docs.claude.com/en/docs/claude-code/skills)
+Built with [Model Context Protocol SDK][mcp-sdk] • Inspired by [Claude Skills][claude-skills]
 
 ---
 
@@ -302,3 +302,56 @@ Built with [Model Context Protocol SDK](https://github.com/modelcontextprotocol/
 Made with ❤️ by KDPA
 
 </div>
+
+<!-- Reference Links -->
+<!-- Badges - Top of README -->
+[npm-version-badge]: https://img.shields.io/npm/v/local-skills-mcp.svg
+[npm-package]: https://www.npmjs.com/package/local-skills-mcp
+[license-badge]: https://img.shields.io/badge/License-MIT-yellow.svg
+[license]: https://opensource.org/licenses/MIT
+[node-badge]: https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg
+[nodejs]: https://nodejs.org/
+[mcp-badge]: https://img.shields.io/badge/MCP-Compatible-purple.svg
+[mcp-protocol]: https://modelcontextprotocol.io/
+
+<!-- CI/CD Badges -->
+[ci-badge]: https://github.com/kdpa-llc/local-skills-mcp/actions/workflows/ci.yml/badge.svg
+[ci-workflow]: https://github.com/kdpa-llc/local-skills-mcp/actions/workflows/ci.yml
+[codecov-badge]: https://codecov.io/gh/kdpa-llc/local-skills-mcp/branch/main/graph/badge.svg
+[codecov]: https://codecov.io/gh/kdpa-llc/local-skills-mcp
+[codeql-badge]: https://github.com/kdpa-llc/local-skills-mcp/actions/workflows/codeql.yml/badge.svg
+[codeql-workflow]: https://github.com/kdpa-llc/local-skills-mcp/actions/workflows/codeql.yml
+
+<!-- GitHub Badges -->
+[stars-badge]: https://img.shields.io/github/stars/kdpa-llc/local-skills-mcp?style=social
+[stargazers]: https://github.com/kdpa-llc/local-skills-mcp/stargazers
+[forks-badge]: https://img.shields.io/github/forks/kdpa-llc/local-skills-mcp?style=social
+[network]: https://github.com/kdpa-llc/local-skills-mcp/network/members
+[issues-badge]: https://img.shields.io/github/issues/kdpa-llc/local-skills-mcp
+[repo-issues]: https://github.com/kdpa-llc/local-skills-mcp/issues
+[commit-badge]: https://img.shields.io/github/last-commit/kdpa-llc/local-skills-mcp
+[commits]: https://github.com/kdpa-llc/local-skills-mcp/commits/main
+[prs-badge]: https://img.shields.io/badge/PRs-welcome-brightgreen.svg
+
+<!-- Repository Links -->
+[repo]: https://github.com/kdpa-llc/local-skills-mcp
+[pulls]: https://github.com/kdpa-llc/local-skills-mcp/pulls
+
+<!-- Documentation Links -->
+[contributing]: CONTRIBUTING.md
+[security]: SECURITY.md
+[changelog]: CHANGELOG.md
+[code-of-conduct]: CODE_OF_CONDUCT.md
+[license-file]: LICENSE
+
+<!-- Sponsorship Links -->
+[sponsor-github-badge]: https://img.shields.io/badge/Sponsor-GitHub%20Sponsors-ea4aaa?logo=github
+[sponsor-github]: https://github.com/sponsors/moscaverd
+[sponsor-coffee-badge]: https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow?logo=buy-me-a-coffee
+[sponsor-coffee]: https://buymeacoffee.com/moscaverd
+[sponsor-paypal-badge]: https://img.shields.io/badge/PayPal-donate-blue?logo=paypal
+[sponsor-paypal]: https://paypal.me/moscaverd
+
+<!-- External Links -->
+[mcp-sdk]: https://github.com/modelcontextprotocol/sdk
+[claude-skills]: https://docs.claude.com/en/docs/claude-code/skills
