@@ -9,6 +9,10 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-purple.svg)](https://modelcontextprotocol.io/)
 
+[![CI](https://github.com/kdpa-llc/local-skills-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/kdpa-llc/local-skills-mcp/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/kdpa-llc/local-skills-mcp/branch/main/graph/badge.svg)](https://codecov.io/gh/kdpa-llc/local-skills-mcp)
+[![CodeQL](https://github.com/kdpa-llc/local-skills-mcp/actions/workflows/codeql.yml/badge.svg)](https://github.com/kdpa-llc/local-skills-mcp/actions/workflows/codeql.yml)
+
 [![GitHub Stars](https://img.shields.io/github/stars/kdpa-llc/local-skills-mcp?style=social)](https://github.com/kdpa-llc/local-skills-mcp/stargazers)
 [![GitHub Forks](https://img.shields.io/github/forks/kdpa-llc/local-skills-mcp?style=social)](https://github.com/kdpa-llc/local-skills-mcp/network/members)
 [![GitHub Issues](https://img.shields.io/github/issues/kdpa-llc/local-skills-mcp)](https://github.com/kdpa-llc/local-skills-mcp/issues)
@@ -58,11 +62,13 @@ Transform AI capabilities with structured, expert-level instructions for special
 ### Install
 
 **From GitHub (recommended):**
+
 ```bash
 npm install -g github:kdpa-llc/local-skills-mcp
 ```
 
 **Or clone locally:**
+
 ```bash
 git clone https://github.com/kdpa-llc/local-skills-mcp.git
 cd local-skills-mcp
@@ -76,6 +82,7 @@ npm install  # The prepare script auto-builds
 Add to your MCP client configuration (e.g., `~/.config/claude-code/mcp.json`):
 
 **If installed globally:**
+
 ```json
 {
   "mcpServers": {
@@ -87,6 +94,7 @@ Add to your MCP client configuration (e.g., `~/.config/claude-code/mcp.json`):
 ```
 
 **If cloned locally:**
+
 ```json
 {
   "mcpServers": {
@@ -107,6 +115,7 @@ The server auto-aggregates from: `~/.claude/skills/`, `./.claude/skills/`, `./sk
 ### Create & Use Skills
 
 Create `~/.claude/skills/my-skill/SKILL.md`:
+
 ```markdown
 ---
 name: my-skill
@@ -116,6 +125,7 @@ description: What this skill does and when to use it
 You are an expert at [domain]. Your task is to [specific task].
 
 Guidelines:
+
 1. Be specific
 2. Provide examples
 3. Be helpful
@@ -139,6 +149,7 @@ Your skill instructions in Markdown format...
 ```
 
 **Required Fields:**
+
 - `name` - Skill identifier (lowercase, hyphens, max 64 chars)
 - `description` - Critical for skill selection (max 200 chars)
 
@@ -157,6 +168,7 @@ Claude uses language understanding to decide when to invoke skills—specific tr
 **Single Tool:** `get_skill` - loads expert prompt instructions for specific tasks
 
 **How it works:**
+
 1. AI sees all available skills in the tool description (auto-updated)
 2. When you request a skill, AI invokes `get_skill`
 3. Full skill content loads with detailed instructions
@@ -164,6 +176,7 @@ Claude uses language understanding to decide when to invoke skills—specific tr
 **Skill Aggregation:** Auto-aggregates from `~/.claude/skills/`, `./.claude/skills/`, `./skills`, and `$SKILLS_DIR` (if set). Later directories override duplicates.
 
 **Custom Directory:** Add via environment variable:
+
 ```json
 {
   "command": "local-skills-mcp",
@@ -174,6 +187,7 @@ Claude uses language understanding to decide when to invoke skills—specific tr
 ```
 
 **Example Skill:**
+
 ```markdown
 ---
 name: code-reviewer
@@ -183,6 +197,7 @@ description: Reviews code for best practices, bugs, and security. Use when revie
 You are a code reviewer with expertise in software engineering best practices.
 
 Analyze the code for:
+
 1. Correctness and bugs
 2. Best practices
 3. Performance and security issues
@@ -193,12 +208,12 @@ Provide specific, actionable feedback.
 
 ## 🆚 Differences from Built-in Skills
 
-| Feature | Local Skills MCP | Built-in Claude Skills |
-|---------|------------------|------------------------|
-| **Portability** | Any MCP client | Claude Code only |
-| **Storage** | Multiple directories aggregated | `~/.claude/skills/` only |
-| **Invocation** | Explicit via MCP tool | Auto-invoked by Claude |
-| **Context Usage** | Lazy loading (names only) | All skills in context |
+| Feature           | Local Skills MCP                | Built-in Claude Skills   |
+| ----------------- | ------------------------------- | ------------------------ |
+| **Portability**   | Any MCP client                  | Claude Code only         |
+| **Storage**       | Multiple directories aggregated | `~/.claude/skills/` only |
+| **Invocation**    | Explicit via MCP tool           | Auto-invoked by Claude   |
+| **Context Usage** | Lazy loading (names only)       | All skills in context    |
 
 ## ❓ FAQ
 
@@ -242,6 +257,7 @@ A: Open an [issue on GitHub](https://github.com/kdpa-llc/local-skills-mcp/issues
 Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 Quick start:
+
 1. Fork the repository
 2. Create your feature branch
 3. Make your changes and test
@@ -263,6 +279,7 @@ If you find Local Skills MCP useful, please consider supporting its development!
 </div>
 
 **Ways to support:**
+
 - ⭐ Star this repository
 - 💰 Sponsor via the badges above
 - 🐛 Report bugs and suggest features
