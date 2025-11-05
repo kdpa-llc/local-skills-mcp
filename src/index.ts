@@ -24,8 +24,33 @@ const packageJson = JSON.parse(
 const VERSION = packageJson.version;
 
 /**
- * Get all skills directories to aggregate from
- * Includes custom SKILLS_DIR if set, plus standard Claude locations
+ * Get all skills directories to aggregate from.
+ *
+ * Scans for skill directories in the following order:
+ * 1. `~/.claude/skills` - Global Claude skills
+ * 2. `{cwd}/.claude/skills` - Project-level Claude skills
+ * 3. `{cwd}/skills` - Default project skills directory
+ * 4. `$SKILLS_DIR` - Custom directory from environment variable
+ *
+ * For duplicate skill names, later directories take precedence. This allows
+ * project-specific skills to override global skills.
+ *
+ * @returns Array of directory paths that exist on the filesystem
+ *
+ * @example
+ * ```typescript
+ * const dirs = getAllSkillsDirectories();
+ * console.log(dirs);
+ * // ['/home/user/.claude/skills', '/home/user/project/skills']
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // With SKILLS_DIR environment variable
+ * process.env.SKILLS_DIR = '/custom/skills';
+ * const dirs = getAllSkillsDirectories();
+ * // Returns: [...standard paths..., '/custom/skills']
+ * ```
  */
 export function getAllSkillsDirectories(): string[] {
   const directories: string[] = [];
@@ -61,10 +86,29 @@ export function getAllSkillsDirectories(): string[] {
 
 const SKILLS_DIRS = getAllSkillsDirectories();
 
+/**
+ * Main MCP server class for serving skills to AI clients.
+ *
+ * LocalSkillsServer handles MCP protocol communication, manages skill discovery
+ * and loading through SkillLoader, and formats responses for clients.
+ *
+ * @example
+ * ```typescript
+ * const server = new LocalSkillsServer();
+ * await server.run();
+ * // Server is now running and listening on stdio
+ * ```
+ */
 export class LocalSkillsServer {
   private server: Server;
   private skillLoader: SkillLoader;
 
+  /**
+   * Creates a new LocalSkillsServer instance.
+   *
+   * Initializes the MCP server with capabilities, creates a SkillLoader
+   * for all configured directories, and sets up request handlers.
+   */
   constructor() {
     this.server = new Server(
       {
@@ -197,6 +241,27 @@ export class LocalSkillsServer {
     };
   }
 
+  /**
+   * Starts the MCP server and connects it to stdio transport.
+   *
+   * This method initializes the stdio transport for MCP communication,
+   * connects the server, and logs startup information including the
+   * list of skill directories being monitored.
+   *
+   * @throws {Error} If the server fails to connect or start
+   *
+   * @example
+   * ```typescript
+   * const server = new LocalSkillsServer();
+   * await server.run();
+   * // Output to stderr:
+   * // Local Skills MCP Server v0.1.0 running on stdio
+   * // Aggregating skills from 3 directories:
+   * //   - /home/user/.claude/skills
+   * //   - /home/user/project/.claude/skills
+   * //   - /home/user/project/skills
+   * ```
+   */
   async run(): Promise<void> {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);

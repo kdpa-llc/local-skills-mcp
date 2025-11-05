@@ -30,6 +30,9 @@ Thumbs.db
 coverage/
 .nyc_output/
 
+# Documentation (generated)
+docs/api/
+
 # Misc
 *.log
 .cache/
