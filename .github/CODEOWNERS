@@ -1,0 +1,136 @@
+# Code Owners for local-skills-mcp
+#
+# This file defines individuals or teams responsible for code review in specific
+# parts of the repository. When a pull request modifies files matching a pattern,
+# the designated code owners are automatically requested for review.
+#
+# Documentation: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Order matters: The last matching pattern takes precedence
+# Use @username for individuals or @org/team-name for teams
+
+# =============================================================================
+# Default Owners
+# =============================================================================
+# These owners will be requested for review on all files unless a later
+# match takes precedence
+
+* @kdpa-llc/maintainers
+
+# =============================================================================
+# Source Code
+# =============================================================================
+# Core TypeScript/JavaScript source code
+
+/src/ @kdpa-llc/core-team @kdpa-llc/maintainers
+
+# Core loader and server implementations (critical components)
+/src/index.ts @kdpa-llc/core-team @kdpa-llc/maintainers
+/src/types.ts @kdpa-llc/core-team @kdpa-llc/maintainers
+
+# =============================================================================
+# Tests
+# =============================================================================
+# Test files should be reviewed by those familiar with testing practices
+
+/src/**/*.test.ts @kdpa-llc/core-team
+/src/test/ @kdpa-llc/core-team
+
+# =============================================================================
+# Configuration Files
+# =============================================================================
+# Build, CI/CD, and tooling configuration
+
+# TypeScript configuration
+/tsconfig*.json @kdpa-llc/core-team @kdpa-llc/maintainers
+
+# Package management
+/package.json @kdpa-llc/maintainers
+/package-lock.json @kdpa-llc/maintainers
+
+# ESLint and Prettier configuration
+/.eslintrc.json @kdpa-llc/maintainers
+/.prettierrc @kdpa-llc/maintainers
+
+# Build configuration
+/build.js @kdpa-llc/maintainers
+
+# =============================================================================
+# CI/CD and GitHub Configuration
+# =============================================================================
+# GitHub Actions, workflows, and repository settings
+
+/.github/ @kdpa-llc/maintainers
+/.github/workflows/ @kdpa-llc/maintainers
+
+# Branch protection and code owners (this file!)
+/.github/CODEOWNERS @kdpa-llc/maintainers
+/.github/BRANCH_PROTECTION.md @kdpa-llc/maintainers
+
+# =============================================================================
+# Documentation
+# =============================================================================
+# Documentation files and README
+
+/README.md @kdpa-llc/maintainers
+/CLAUDE.md @kdpa-llc/maintainers
+/docs/ @kdpa-llc/maintainers
+
+# API documentation (technical, should involve core team)
+/docs/API.md @kdpa-llc/core-team @kdpa-llc/maintainers
+/docs/ARCHITECTURE.md @kdpa-llc/core-team @kdpa-llc/maintainers
+
+# =============================================================================
+# Dependencies and Security
+# =============================================================================
+# Files that affect dependencies or security posture
+
+# Dependency updates and security patches
+/package.json @kdpa-llc/maintainers
+/package-lock.json @kdpa-llc/maintainers
+
+# Security policy
+/SECURITY.md @kdpa-llc/maintainers
+
+# =============================================================================
+# Release and Distribution
+# =============================================================================
+# Files that affect how the package is released and distributed
+
+# NPM ignore patterns
+/.npmignore @kdpa-llc/maintainers
+
+# Git ignore patterns
+/.gitignore @kdpa-llc/maintainers
+
+# License
+/LICENSE @kdpa-llc/maintainers
+
+# =============================================================================
+# Examples and Skills
+# =============================================================================
+# Example skill implementations and configurations
+
+/skills/ @kdpa-llc/core-team @kdpa-llc/maintainers
+
+# =============================================================================
+# Notes for Code Owners
+# =============================================================================
+#
+# Responsibilities:
+# - Review pull requests that modify files you own
+# - Provide timely feedback (within 2 business days)
+# - Ensure changes meet quality standards
+# - Verify tests and documentation are updated
+# - Check for security implications
+#
+# When to Request Additional Reviewers:
+# - Complex architectural changes
+# - Security-sensitive modifications
+# - Breaking API changes
+# - Large refactoring efforts
+#
+# Approval Requirements:
+# - At least one code owner approval required for all PRs
+# - Additional maintainer approval for critical paths
+# - See BRANCH_PROTECTION.md for full requirements
