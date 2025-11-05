@@ -1,0 +1,70 @@
+name: Close Invalid Issues
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  issues: write
+
+jobs:
+  check-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check issue body length
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const body = issue.body || '';
+            const minLength = 50;
+
+            // Remove template boilerplate and whitespace for accurate length check
+            const cleanBody = body
+              .replace(/<!--[\s\S]*?-->/g, '') // Remove HTML comments
+              .replace(/#{1,6}\s+.*/g, '')      // Remove headers
+              .replace(/\[.*?\]\(.*?\)/g, '')   // Remove links
+              .trim();
+
+            if (cleanBody.length < minLength) {
+              // Label as invalid
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels: ['invalid', 'status: need-more-info']
+              });
+
+              // Add comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `Thank you for opening this issue!
+
+            However, the issue description appears to be too brief (less than ${minLength} characters of actual content).
+
+            To help us understand and address your concern, please:
+            1. Use one of our issue templates (bug report or feature request)
+            2. Provide a clear and detailed description of the issue
+            3. Include relevant context, steps to reproduce, or use cases
+            4. Add any error messages, screenshots, or code examples
+
+            This issue has been labeled as **invalid** and **needs more info**. Please update the issue description with more details, and we'll be happy to review it.
+
+            If you don't update this issue within 7 days, it may be automatically closed by our stale bot.`
+              });
+
+              // Close the issue
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed',
+                state_reason: 'not_planned'
+              });
+
+              core.info(`Closed issue #${issue.number} due to insufficient description`);
+            } else {
+              core.info(`Issue #${issue.number} has sufficient description (${cleanBody.length} chars)`);
+            }
