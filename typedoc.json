@@ -1,0 +1,61 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts", "src/skill-loader.ts", "src/types.ts"],
+  "out": "docs/api",
+  "plugin": [],
+  "exclude": ["**/*.test.ts", "**/*.spec.ts", "**/test/**"],
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "excludeInternal": true,
+  "readme": "README.md",
+  "name": "local-skills-mcp",
+  "navigationLinks": {
+    "GitHub": "https://github.com/kdpa-llc/local-skills-mcp",
+    "API Documentation": "./API.md",
+    "Architecture": "./ARCHITECTURE.md"
+  },
+  "includeVersion": true,
+  "sort": ["source-order"],
+  "kindSortOrder": [
+    "Class",
+    "Constructor",
+    "Property",
+    "Method",
+    "Function",
+    "Interface",
+    "Type alias"
+  ],
+  "categorizeByGroup": true,
+  "categoryOrder": [
+    "Core Classes",
+    "Interfaces",
+    "Functions",
+    "*"
+  ],
+  "groupOrder": [
+    "Classes",
+    "Interfaces",
+    "Type Aliases",
+    "Functions",
+    "*"
+  ],
+  "visibilityFilters": {
+    "protected": false,
+    "private": false,
+    "inherited": true,
+    "external": false
+  },
+  "searchInComments": true,
+  "searchInDocuments": true,
+  "githubPages": false,
+  "gitRevision": "main",
+  "gitRemote": "origin",
+  "sourceLinkTemplate": "https://github.com/kdpa-llc/local-skills-mcp/blob/{gitRevision}/{path}#L{line}",
+  "disableSources": false,
+  "includes": "docs",
+  "media": "docs/images",
+  "excludeExternals": true,
+  "markedOptions": {
+    "mangle": false
+  }
+}

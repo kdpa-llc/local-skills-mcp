@@ -3,11 +3,43 @@ import path from "path";
 import YAML from "yaml";
 import { Skill, SkillMetadata } from "./types.js";
 
+/**
+ * Manages skill discovery, loading, and caching across multiple directories.
+ *
+ * SkillLoader is responsible for:
+ * - Discovering skills in configured directories
+ * - Loading and parsing SKILL.md files with YAML frontmatter
+ * - Caching loaded skills for performance
+ * - Managing the skill registry for fast lookups
+ *
+ * @example
+ * ```typescript
+ * const loader = new SkillLoader([
+ *   '/home/user/.claude/skills',
+ *   '/home/user/project/skills'
+ * ]);
+ * const skills = await loader.discoverSkills();
+ * const skill = await loader.loadSkill('code-reviewer');
+ * ```
+ */
 export class SkillLoader {
   private skillsPaths: string[];
   private skillCache = new Map<string, Skill>();
   private skillRegistry = new Map<string, { path: string; source: string }>();
 
+  /**
+   * Creates a new SkillLoader instance.
+   *
+   * @param skillsPaths - Array of directory paths to search for skills
+   *
+   * @example
+   * ```typescript
+   * const loader = new SkillLoader([
+   *   '/home/user/.claude/skills',
+   *   '/home/user/project/skills'
+   * ]);
+   * ```
+   */
   constructor(skillsPaths: string[]) {
     this.skillsPaths = skillsPaths;
   }
@@ -49,7 +81,20 @@ export class SkillLoader {
   }
 
   /**
-   * Discover all available skills aggregated from all directories
+   * Discover all available skills aggregated from all directories.
+   *
+   * Scans all configured directories for subdirectories containing SKILL.md files.
+   * Later directories override earlier ones for duplicate skill names.
+   * The internal skill registry is rebuilt on each call.
+   *
+   * @returns Promise resolving to a sorted array of skill names
+   *
+   * @example
+   * ```typescript
+   * const skillNames = await loader.discoverSkills();
+   * console.log(skillNames);
+   * // Output: ['code-reviewer', 'test-generator', 'refactoring-expert']
+   * ```
    */
   async discoverSkills(): Promise<string[]> {
     this.skillRegistry.clear();
@@ -95,7 +140,35 @@ export class SkillLoader {
   }
 
   /**
-   * Load a specific skill by name (lazy loading)
+   * Load a specific skill by name with lazy loading and caching.
+   *
+   * First checks the cache for previously loaded skills. If not cached,
+   * loads the SKILL.md file, parses YAML frontmatter, validates metadata,
+   * and caches the result for subsequent calls.
+   *
+   * @param skillName - The name of the skill to load
+   * @returns Promise resolving to the complete Skill object
+   * @throws {Error} If skill is not found in registry or file cannot be loaded/parsed
+   *
+   * @example
+   * ```typescript
+   * const skill = await loader.loadSkill('code-reviewer');
+   * console.log(skill.name);        // 'Code Reviewer'
+   * console.log(skill.description); // 'Expert code review assistant'
+   * console.log(skill.content);     // Full skill prompt content
+   * console.log(skill.source);      // '/home/user/.claude/skills'
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // Error handling
+   * try {
+   *   const skill = await loader.loadSkill('non-existent');
+   * } catch (error) {
+   *   console.error(error.message);
+   *   // "Skill "non-existent" not found. Run list_skills to see available skills."
+   * }
+   * ```
    */
   async loadSkill(skillName: string): Promise<Skill> {
     // Check cache first
@@ -138,7 +211,23 @@ export class SkillLoader {
   }
 
   /**
-   * Get skill metadata without loading the full content (for listing)
+   * Get skill metadata without loading the full content.
+   *
+   * Lightweight operation that loads only the YAML frontmatter without
+   * the full skill content. Useful for listing skills with descriptions.
+   *
+   * @param skillName - The name of the skill
+   * @returns Promise resolving to metadata with source directory
+   * @throws {Error} If skill is not found or metadata cannot be loaded
+   *
+   * @example
+   * ```typescript
+   * const metadata = await loader.getSkillMetadata('code-reviewer');
+   * console.log(metadata.name);        // 'Code Reviewer'
+   * console.log(metadata.description); // 'Expert code review assistant'
+   * console.log(metadata.source);      // '/home/user/.claude/skills'
+   * // Note: metadata does not include 'content' field
+   * ```
    */
   async getSkillMetadata(
     skillName: string
@@ -165,7 +254,16 @@ export class SkillLoader {
   }
 
   /**
-   * Get all skills directories being monitored
+   * Get all skills directories being monitored.
+   *
+   * @returns Array of directory paths configured for this loader
+   *
+   * @example
+   * ```typescript
+   * const paths = loader.getSkillsPaths();
+   * console.log(paths);
+   * // Output: ['/home/user/.claude/skills', '/home/user/project/skills']
+   * ```
    */
   getSkillsPaths(): string[] {
     return this.skillsPaths;
