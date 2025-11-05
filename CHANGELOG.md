@@ -72,4 +72,14 @@ The following versions were internal development iterations before the public re
 
 ---
 
+<!-- Version Links -->
 [0.1.0]: https://github.com/kdpa-llc/local-skills-mcp/releases/tag/v0.1.0
+[unreleased]: https://github.com/kdpa-llc/local-skills-mcp/compare/v0.1.0...HEAD
+
+<!-- Reference Links -->
+[repo]: https://github.com/kdpa-llc/local-skills-mcp
+[issues]: https://github.com/kdpa-llc/local-skills-mcp/issues
+[pulls]: https://github.com/kdpa-llc/local-skills-mcp/pulls
+[releases]: https://github.com/kdpa-llc/local-skills-mcp/releases
+[contributing]: CONTRIBUTING.md
+[security]: SECURITY.md

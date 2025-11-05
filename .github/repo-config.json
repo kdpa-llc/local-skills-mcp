@@ -1,0 +1,29 @@
+{
+  "repository": {
+    "owner": "kdpa-llc",
+    "name": "local-skills-mcp",
+    "url": "https://github.com/kdpa-llc/local-skills-mcp"
+  },
+  "package": {
+    "name": "local-skills-mcp",
+    "npm": "https://www.npmjs.com/package/local-skills-mcp"
+  },
+  "sponsors": {
+    "github": "moscaverd",
+    "buymeacoffee": "moscaverd",
+    "paypal": "moscaverd"
+  },
+  "maintainers": [
+    {
+      "name": "KDPA",
+      "github": "kdpa-llc"
+    }
+  ],
+  "links": {
+    "issues": "https://github.com/kdpa-llc/local-skills-mcp/issues",
+    "pulls": "https://github.com/kdpa-llc/local-skills-mcp/pulls",
+    "releases": "https://github.com/kdpa-llc/local-skills-mcp/releases",
+    "stargazers": "https://github.com/kdpa-llc/local-skills-mcp/stargazers",
+    "network": "https://github.com/kdpa-llc/local-skills-mcp/network/members"
+  }
+}
