@@ -26,14 +26,15 @@ const VERSION = packageJson.version;
 /**
  * Get all skills directories to aggregate from.
  *
- * Scans for skill directories in the following order:
- * 1. `~/.claude/skills` - Global Claude skills
- * 2. `{cwd}/.claude/skills` - Project-level Claude skills
- * 3. `{cwd}/skills` - Default project skills directory
- * 4. `$SKILLS_DIR` - Custom directory from environment variable
+ * Scans for skill directories in the following order (lowest to highest priority):
+ * 1. `<package-root>/skills` - Package built-in skills (self-documenting, always available)
+ * 2. `~/.claude/skills` - Global Claude skills
+ * 3. `{cwd}/.claude/skills` - Project-level Claude skills
+ * 4. `{cwd}/skills` - Default project skills directory
+ * 5. `$SKILLS_DIR` - Custom directory from environment variable
  *
  * For duplicate skill names, later directories take precedence. This allows
- * project-specific skills to override global skills.
+ * users to override built-in skills with their own versions.
  *
  * @returns Array of directory paths that exist on the filesystem
  *
@@ -41,7 +42,7 @@ const VERSION = packageJson.version;
  * ```typescript
  * const dirs = getAllSkillsDirectories();
  * console.log(dirs);
- * // ['/home/user/.claude/skills', '/home/user/project/skills']
+ * // ['/usr/lib/node_modules/local-skills-mcp/skills', '/home/user/.claude/skills', '/home/user/project/skills']
  * ```
  *
  * @example
@@ -55,7 +56,15 @@ const VERSION = packageJson.version;
 export function getAllSkillsDirectories(): string[] {
   const directories: string[] = [];
 
-  // Always include standard Claude locations if they exist
+  // Always include package built-in skills first (lowest priority, always available)
+  // This provides self-documenting capabilities out-of-the-box
+  const packageRoot = path.join(__dirname, "..");
+  const packageSkills = path.join(packageRoot, "skills");
+  if (fs.existsSync(packageSkills)) {
+    directories.push(packageSkills);
+  }
+
+  // Include standard Claude locations if they exist
   const homeClaudeSkills = path.join(os.homedir(), ".claude", "skills");
   if (fs.existsSync(homeClaudeSkills)) {
     directories.push(homeClaudeSkills);
@@ -76,9 +85,9 @@ export function getAllSkillsDirectories(): string[] {
     directories.push(process.env.SKILLS_DIR);
   }
 
-  // If no directories found, at least return the default
+  // If no directories found, at least return the package built-in skills
   if (directories.length === 0) {
-    directories.push(defaultSkills);
+    directories.push(packageSkills);
   }
 
   return directories;
