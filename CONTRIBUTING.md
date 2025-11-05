@@ -73,11 +73,67 @@ npm run watch
 
 ## Commit Messages
 
-- Use present tense ("Add feature" not "Added feature")
-- Use imperative mood ("Move cursor to..." not "Moves cursor to...")
-- Reference issues and pull requests when relevant
-- First line should be concise (50 chars or less)
-- Add detailed description if needed after a blank line
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) for automated versioning and changelog generation.
+
+### Commit Format
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+### Commit Types
+
+- **feat**: A new feature (triggers minor version bump)
+- **fix**: A bug fix (triggers patch version bump)
+- **perf**: A performance improvement (triggers patch version bump)
+- **docs**: Documentation changes (triggers patch version bump)
+- **refactor**: Code refactoring without feature changes (triggers patch version bump)
+- **build**: Changes to build system or dependencies (triggers patch version bump)
+- **style**: Code style changes (formatting, no functional changes)
+- **test**: Adding or updating tests
+- **ci**: Changes to CI configuration
+- **chore**: Other changes that don't modify src or test files
+- **revert**: Reverts a previous commit (triggers patch version bump)
+
+### Breaking Changes
+
+To trigger a major version bump, add `BREAKING CHANGE:` in the commit body or append `!` after the type:
+
+```
+feat!: redesign skill loading API
+
+BREAKING CHANGE: The skill loading function now returns a Promise
+```
+
+### Examples
+
+```bash
+# Feature (minor version bump)
+feat(loader): add support for YAML skill files
+
+# Bug fix (patch version bump)
+fix(server): handle missing skill directory gracefully
+
+# Documentation (patch version bump)
+docs(readme): update installation instructions
+
+# Breaking change (major version bump)
+feat!: change MCP protocol version to 2.0
+
+BREAKING CHANGE: Requires MCP SDK v2.0 or higher
+```
+
+### Guidelines
+
+- Use imperative mood ("Add feature" not "Added feature")
+- Reference issues in the footer: `Resolves #123` or `Closes #456`
+- Keep subject line under 72 characters
+- Separate subject from body with a blank line
+- Use body to explain what and why, not how
 
 ## Project Structure
 
@@ -93,14 +149,45 @@ local-skills-mcp/
 
 ## Testing
 
-Currently, testing is manual. To test your changes:
+This project has a comprehensive test suite with unit, integration, and end-to-end tests.
+
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:ui
+
+# Run tests once (CI mode)
+npm run test:run
+
+# Run tests with coverage
+npm run test:coverage
+
+# Run specific test suites
+npm run test:unit          # Unit tests only
+npm run test:integration   # Integration tests only
+npm run test:e2e          # End-to-end tests only
+```
+
+### Writing Tests
+
+- Add unit tests for new functions and modules
+- Add integration tests for feature interactions
+- Add end-to-end tests for complete user workflows
+- Aim for high code coverage (95%+ target)
+- Use descriptive test names that explain the scenario
+
+### Manual Testing
+
+For manual verification:
 
 1. Build the project: `npm run build`
 2. Configure MCP client to use your local build
 3. Test skill discovery and loading
 4. Verify error handling
-
-We welcome contributions to add automated testing!
 
 ## Documentation
 
