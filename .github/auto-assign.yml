@@ -1,0 +1,49 @@
+# Configuration for auto-assign action
+# Automatically assigns reviewers to pull requests
+
+# Add reviewers to pull requests
+addReviewers: true
+
+# Add assignees to pull requests
+addAssignees: false
+
+# Number of reviewers to add (randomly selected from the list)
+numberOfReviewers: 1
+
+# List of reviewers (usernames)
+# Note: These should be members of the kdpa-llc/maintainers team
+reviewers:
+  - moscaverd
+  # Add more maintainers here as the team grows
+  # - username2
+  # - username3
+
+# Alternatively, use teams instead of individual reviewers
+# Requires the team to have read access to the repository
+# numberOfReviewers: 1
+# reviewers:
+#   - kdpa-llc/maintainers
+
+# Skip these keywords in PR titles
+skipKeywords:
+  - wip
+  - WIP
+  - do not review
+  - '[skip ci]'
+
+# Use assignee as reviewer
+# If true, will not assign PR author as reviewer
+useAssigneeAsReviewer: false
+
+# Use review groups for different file patterns
+# This allows routing PRs to specialized reviewers based on changed files
+# reviewGroups:
+#   frontend:
+#     - 'src/ui/**'
+#     - 'src/components/**'
+#   backend:
+#     - 'src/server/**'
+#     - 'src/api/**'
+#   testing:
+#     - '**/*.test.ts'
+#     - 'src/test/**'

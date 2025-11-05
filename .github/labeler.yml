@@ -1,0 +1,73 @@
+# Configuration for PR Labeler
+# Automatically labels pull requests based on the files changed
+
+# Core source code
+'type: core':
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/**/*.ts'
+      - 'src/**/*.js'
+      - '!src/**/*.test.ts'
+      - '!src/**/*.spec.ts'
+      - '!src/test/**'
+
+# Testing
+'type: testing':
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'src/**/*.test.ts'
+      - 'src/**/*.spec.ts'
+      - 'src/test/**'
+      - '**/__tests__/**'
+
+# CI/CD and workflows
+'type: ci-cd':
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/workflows/**'
+      - '.github/actions/**'
+      - 'build.js'
+      - '.github/CODEOWNERS'
+      - '.github/BRANCH_PROTECTION.md'
+
+# Documentation
+'type: documentation':
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*.md'
+      - 'docs/**'
+      - '!CHANGELOG.md'
+
+# Configuration files
+'type: config':
+  - changed-files:
+    - any-glob-to-any-file:
+      - '*.json'
+      - '*.yml'
+      - '*.yaml'
+      - '.eslintrc*'
+      - '.prettierrc*'
+      - 'tsconfig*.json'
+      - '!.github/**/*.yml'
+      - '!.github/**/*.yaml'
+
+# Dependencies
+'type: dependencies':
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'npm-shrinkwrap.json'
+
+# Skills examples
+'type: skills':
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'skills/**'
+
+# GitHub specific
+'type: github':
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/**'
+      - '!.github/workflows/**'

@@ -1,0 +1,51 @@
+name: Welcome First-Time Contributors
+
+on:
+  issues:
+    types: [opened]
+  pull_request_target:
+    types: [opened]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  welcome:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Welcome first-time contributors
+        uses: actions/first-interaction@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          issue-message: |
+            Welcome to the local-skills-mcp project! :wave:
+
+            Thank you for opening your first issue! We appreciate you taking the time to contribute.
+
+            A maintainer will review your issue and respond as soon as possible. In the meantime:
+            - Please ensure you've provided all the information requested in the issue template
+            - Check our [documentation](./README.md) for any related information
+            - Join our community discussions if you have questions
+
+            We're excited to have you here!
+          pr-message: |
+            Welcome to the local-skills-mcp project! :tada:
+
+            Thank you for submitting your first pull request! We're thrilled to have your contribution.
+
+            Here's what happens next:
+            - Our automated checks will run to verify your changes
+            - A maintainer will review your PR and may request changes
+            - Please be patient - we'll do our best to review promptly
+            - Feel free to ask questions in the PR comments
+
+            **Before your PR can be merged:**
+            - [ ] All tests must pass
+            - [ ] Code must pass linting and type checks
+            - [ ] At least one maintainer must approve
+            - [ ] All review comments must be addressed
+
+            Please review our [contribution guidelines](./CONTRIBUTING.md) if you haven't already.
+
+            Thanks again for your contribution! :rocket:
