@@ -1,7 +1,7 @@
-import fs from 'fs/promises';
-import path from 'path';
-import YAML from 'yaml';
-import { Skill, SkillMetadata } from './types.js';
+import fs from "fs/promises";
+import path from "path";
+import YAML from "yaml";
+import { Skill, SkillMetadata } from "./types.js";
 
 export class SkillLoader {
   private skillsPaths: string[];
@@ -15,16 +15,19 @@ export class SkillLoader {
   /**
    * Parse SKILL.md file with YAML frontmatter
    */
-  private parseSkillFile(content: string): { metadata: SkillMetadata; content: string } {
+  private parseSkillFile(content: string): {
+    metadata: SkillMetadata;
+    content: string;
+  } {
     // Check if file starts with frontmatter delimiter
-    if (!content.startsWith('---\n')) {
-      throw new Error('SKILL.md must start with YAML frontmatter (---)');
+    if (!content.startsWith("---\n")) {
+      throw new Error("SKILL.md must start with YAML frontmatter (---)");
     }
 
     // Find the closing delimiter
-    const endDelimiterIndex = content.indexOf('\n---\n', 4);
+    const endDelimiterIndex = content.indexOf("\n---\n", 4);
     if (endDelimiterIndex === -1) {
-      throw new Error('SKILL.md frontmatter must end with --- delimiter');
+      throw new Error("SKILL.md frontmatter must end with --- delimiter");
     }
 
     // Extract and parse YAML frontmatter
@@ -60,14 +63,14 @@ export class SkillLoader {
         for (const entry of entries) {
           if (entry.isDirectory()) {
             const skillPath = path.join(skillsPath, entry.name);
-            const skillFilePath = path.join(skillPath, 'SKILL.md');
+            const skillFilePath = path.join(skillPath, "SKILL.md");
 
             try {
               await fs.access(skillFilePath);
               // Later directories override earlier ones for duplicate names
               allSkills.set(entry.name, {
                 path: skillPath,
-                source: skillsPath
+                source: skillsPath,
               });
             } catch {
               // Skip directories without SKILL.md
@@ -76,7 +79,7 @@ export class SkillLoader {
           }
         }
       } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
           console.error(`Error reading directory ${skillsPath}:`, error);
         }
         // Continue with other directories even if one fails
@@ -103,14 +106,16 @@ export class SkillLoader {
     // Get skill location from registry
     const skillInfo = this.skillRegistry.get(skillName);
     if (!skillInfo) {
-      throw new Error(`Skill "${skillName}" not found. Run list_skills to see available skills.`);
+      throw new Error(
+        `Skill "${skillName}" not found. Run list_skills to see available skills.`
+      );
     }
 
-    const skillFilePath = path.join(skillInfo.path, 'SKILL.md');
+    const skillFilePath = path.join(skillInfo.path, "SKILL.md");
 
     try {
       // Load and parse SKILL.md
-      const fileContent = await fs.readFile(skillFilePath, 'utf-8');
+      const fileContent = await fs.readFile(skillFilePath, "utf-8");
       const { metadata, content } = this.parseSkillFile(fileContent);
 
       const skill: Skill = {
@@ -118,7 +123,7 @@ export class SkillLoader {
         description: metadata.description,
         content,
         path: skillInfo.path,
-        source: skillInfo.source
+        source: skillInfo.source,
       };
 
       // Cache the skill
@@ -126,30 +131,36 @@ export class SkillLoader {
 
       return skill;
     } catch (error) {
-      throw new Error(`Failed to load skill "${skillName}": ${(error as Error).message}`);
+      throw new Error(
+        `Failed to load skill "${skillName}": ${(error as Error).message}`
+      );
     }
   }
 
   /**
    * Get skill metadata without loading the full content (for listing)
    */
-  async getSkillMetadata(skillName: string): Promise<SkillMetadata & { source: string }> {
+  async getSkillMetadata(
+    skillName: string
+  ): Promise<SkillMetadata & { source: string }> {
     const skillInfo = this.skillRegistry.get(skillName);
     if (!skillInfo) {
       throw new Error(`Skill "${skillName}" not found`);
     }
 
-    const skillFilePath = path.join(skillInfo.path, 'SKILL.md');
+    const skillFilePath = path.join(skillInfo.path, "SKILL.md");
 
     try {
-      const fileContent = await fs.readFile(skillFilePath, 'utf-8');
+      const fileContent = await fs.readFile(skillFilePath, "utf-8");
       const { metadata } = this.parseSkillFile(fileContent);
       return {
         ...metadata,
-        source: skillInfo.source
+        source: skillInfo.source,
       };
     } catch (error) {
-      throw new Error(`Failed to load metadata for skill "${skillName}": ${(error as Error).message}`);
+      throw new Error(
+        `Failed to load metadata for skill "${skillName}": ${(error as Error).message}`
+      );
     }
   }
 
