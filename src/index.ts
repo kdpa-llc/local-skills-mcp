@@ -85,11 +85,6 @@ export function getAllSkillsDirectories(): string[] {
     directories.push(process.env.SKILLS_DIR);
   }
 
-  // If no directories found, at least return the package built-in skills
-  if (directories.length === 0) {
-    directories.push(packageSkills);
-  }
-
   return directories;
 }
 
@@ -164,12 +159,9 @@ export class LocalSkillsServer {
         "Use when you need focused expertise, systematic approaches, or professional standards for any task that would benefit from specialized knowledge. " +
         "Invoke with the skill name to receive detailed instructions that enhance your problem-solving approach with structured, expert-level guidance.";
 
+      // Package built-in skills ensure there are always skills available
       if (skillNames.length > 0) {
         getSkillDescription += `\n\nAvailable skills: ${skillNames.join(", ")}`;
-      } else {
-        getSkillDescription +=
-          "\n\nNo skills currently available. Check configured directories: " +
-          SKILLS_DIRS.join(", ");
       }
 
       const tools: Tool[] = [
@@ -283,6 +275,7 @@ export class LocalSkillsServer {
 }
 
 // Start the server only if this module is being run directly
+/* istanbul ignore if */
 if (import.meta.url === `file://${process.argv[1]}`) {
   const server = new LocalSkillsServer();
   server.run().catch((error) => {
