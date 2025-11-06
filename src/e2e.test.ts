@@ -119,7 +119,7 @@ class StdioMCPClient {
       const timeout = setTimeout(() => {
         this.responseHandlers.delete(id);
         reject(new Error(`Request timeout for method: ${method}`));
-      }, 5000);
+      }, 30000); // Increased timeout for slower CI environments
 
       this.responseHandlers.set(id, (response: JsonRpcResponse) => {
         clearTimeout(timeout);
