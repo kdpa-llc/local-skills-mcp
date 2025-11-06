@@ -6,6 +6,9 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 
+// Increase max listeners to prevent warnings during tests
+process.setMaxListeners(20);
+
 /**
  * Safely remove a directory with retries for Windows file locking issues.
  * Windows can be slower to release file handles, causing EBUSY errors.
@@ -101,18 +104,22 @@ It provides different guidance.`
   });
 
   afterEach(async () => {
-    // Clean up
+    // Clean up client
     try {
       await client.close();
     } catch {
       // Ignore cleanup errors
     }
 
+    // Clean up server using public close() method
     try {
-      await (server as any).server.close();
+      await server.close();
     } catch {
       // Ignore cleanup errors
     }
+
+    // Wait for all file handles to be released (Windows needs extra time)
+    await new Promise((resolve) => setTimeout(resolve, 200));
 
     process.chdir(originalCwd);
 

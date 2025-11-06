@@ -272,6 +272,27 @@ export class LocalSkillsServer {
     );
     SKILLS_DIRS.forEach((dir) => console.error(`  - ${dir}`));
   }
+
+  /**
+   * Closes the server and releases all resources.
+   *
+   * This method properly shuts down the MCP server and waits for all
+   * file handles and resources to be released. This is particularly
+   * important on Windows where file handles may take longer to release.
+   *
+   * @example
+   * ```typescript
+   * const server = new LocalSkillsServer();
+   * await server.run();
+   * // ... do work ...
+   * await server.close();
+   * ```
+   */
+  async close(): Promise<void> {
+    await this.server.close();
+    // Allow time for all handles to be released (important on Windows)
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
 }
 
 // Start the server only if this module is being run directly

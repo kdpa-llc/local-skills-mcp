@@ -4,6 +4,9 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 
+// Increase max listeners to prevent warnings during tests
+process.setMaxListeners(20);
+
 /**
  * Safely remove a directory with retries for Windows file locking issues.
  * Windows can be slower to release file handles, causing EBUSY errors.
@@ -237,7 +240,7 @@ describe("getAllSkillsDirectories", () => {
 describe("LocalSkillsServer", () => {
   let tempDir: string;
   let skillsDir: string;
-  let server: LocalSkillsServer;
+  let server: LocalSkillsServer | null = null;
 
   beforeEach(() => {
     // Use realpathSync to resolve any symlinks (important on macOS where /var -> /private/var)
@@ -264,15 +267,25 @@ This is test skill content.`
   });
 
   afterEach(async () => {
-    // Clean up temp directory (with Windows retry logic)
+    // CRITICAL: Close server BEFORE cleaning up files (important for Windows)
+    if (server) {
+      try {
+        await server.close();
+      } catch (err) {
+        console.warn("Error closing server:", err);
+      }
+      server = null;
+    }
+
+    // Wait for all file handles to be released (Windows needs extra time)
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    // THEN clean up temp directory
     await removeDir(tempDir);
   });
 
   it("should create server instance successfully", () => {
-    expect(() => {
-      server = new LocalSkillsServer();
-    }).not.toThrow();
-
+    server = new LocalSkillsServer();
     expect(server).toBeDefined();
   });
 

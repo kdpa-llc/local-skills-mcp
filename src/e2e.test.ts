@@ -2,6 +2,9 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { spawn, ChildProcess } from "child_process";
 import { resolve } from "path";
 
+// Increase max listeners to prevent warnings during tests
+process.setMaxListeners(20);
+
 /**
  * End-to-End tests for Local Skills MCP Server
  *
@@ -151,21 +154,23 @@ class StdioMCPClient {
 
         // Listen for exit event
         this.serverProcess!.once("exit", () => {
-          // Wait a bit for all handles to be released
-          setTimeout(doResolve, 200);
+          // Wait a bit for all handles to be released (Windows needs more time)
+          setTimeout(doResolve, 300);
         });
 
-        // Try graceful shutdown first
-        this.serverProcess!.kill("SIGTERM");
+        // On Windows, SIGTERM might not work properly - use SIGINT first
+        const signal = process.platform === "win32" ? "SIGINT" : "SIGTERM";
+        this.serverProcess!.kill(signal);
 
-        // Force kill after timeout
+        // Force kill after timeout (Windows needs more time)
+        const forceKillTimeout = process.platform === "win32" ? 1500 : 1000;
         setTimeout(() => {
           if (this.serverProcess && !this.serverProcess.killed) {
             this.serverProcess.kill("SIGKILL");
           }
           // Ensure we resolve even if exit event doesn't fire
-          setTimeout(doResolve, 300);
-        }, 1000);
+          setTimeout(doResolve, 500);
+        }, forceKillTimeout);
       });
     }
   }
@@ -183,7 +188,9 @@ describe("E2E Tests - Subprocess with Stdio Transport", () => {
   afterEach(async () => {
     await client.stop();
     // Wait for all file handles to be released before starting next test
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    // Windows needs extra time for handle cleanup
+    const cleanupDelay = process.platform === "win32" ? 200 : 100;
+    await new Promise((resolve) => setTimeout(resolve, cleanupDelay));
   });
 
   describe("Server Initialization", () => {
