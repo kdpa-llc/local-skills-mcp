@@ -6,6 +6,28 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 
+/**
+ * Safely remove a directory with retries for Windows file locking issues.
+ * Windows can be slower to release file handles, causing EBUSY errors.
+ */
+async function removeDir(dir: string, retries = 3, delay = 100): Promise<void> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      if (fs.existsSync(dir)) {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+      return;
+    } catch (error: any) {
+      if (error.code === "EBUSY" && i < retries - 1) {
+        // Wait before retrying (Windows needs time to release file handles)
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+      throw error;
+    }
+  }
+}
+
 describe("Integration Tests - MCP Protocol Flow", () => {
   let tempDir: string;
   let skillsDir: string;
@@ -19,7 +41,10 @@ describe("Integration Tests - MCP Protocol Flow", () => {
     originalCwd = process.cwd();
 
     // Create temporary directory for test fixtures
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "integration-test-"));
+    // Use realpathSync to resolve any symlinks (important on macOS where /var -> /private/var)
+    tempDir = fs.realpathSync(
+      fs.mkdtempSync(path.join(os.tmpdir(), "integration-test-"))
+    );
     skillsDir = path.join(tempDir, "skills");
     fs.mkdirSync(skillsDir, { recursive: true });
 
@@ -91,9 +116,8 @@ It provides different guidance.`
 
     process.chdir(originalCwd);
 
-    if (fs.existsSync(tempDir)) {
-      fs.rmSync(tempDir, { recursive: true, force: true });
-    }
+    // Clean up temp directory (with Windows retry logic)
+    await removeDir(tempDir);
   });
 
   describe("Server-Client Connection", () => {
@@ -446,7 +470,10 @@ It provides different guidance.`
   describe("Empty Skills Directory", () => {
     it("should handle empty skills directory gracefully", async () => {
       // Create empty temp directory
-      const emptyDir = fs.mkdtempSync(path.join(os.tmpdir(), "empty-test-"));
+      // Use realpathSync to resolve any symlinks (important on macOS where /var -> /private/var)
+      const emptyDir = fs.realpathSync(
+        fs.mkdtempSync(path.join(os.tmpdir(), "empty-test-"))
+      );
       const emptySkillsDir = path.join(emptyDir, "skills");
       fs.mkdirSync(emptySkillsDir, { recursive: true });
 
@@ -483,7 +510,8 @@ It provides different guidance.`
         await (emptyServer as any).server.close();
       } finally {
         process.chdir(originalCwd);
-        fs.rmSync(emptyDir, { recursive: true, force: true });
+        // Clean up temp directory (with Windows retry logic)
+        await removeDir(emptyDir);
       }
     });
   });

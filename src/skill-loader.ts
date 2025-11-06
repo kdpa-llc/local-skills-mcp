@@ -172,8 +172,9 @@ export class SkillLoader {
    */
   async loadSkill(skillName: string): Promise<Skill> {
     // Check cache first
-    if (this.skillCache.has(skillName)) {
-      return this.skillCache.get(skillName)!;
+    const cachedSkill = this.skillCache.get(skillName);
+    if (cachedSkill) {
+      return cachedSkill;
     }
 
     // Get skill location from registry

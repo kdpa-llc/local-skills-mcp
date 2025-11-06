@@ -4,6 +4,28 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 
+/**
+ * Safely remove a directory with retries for Windows file locking issues.
+ * Windows can be slower to release file handles, causing EBUSY errors.
+ */
+async function removeDir(dir: string, retries = 3, delay = 100): Promise<void> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      if (fs.existsSync(dir)) {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+      return;
+    } catch (error: any) {
+      if (error.code === "EBUSY" && i < retries - 1) {
+        // Wait before retrying (Windows needs time to release file handles)
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+      throw error;
+    }
+  }
+}
+
 // Mock MCP SDK
 vi.mock("@modelcontextprotocol/sdk/server/index.js", () => {
   class MockServer {
@@ -43,18 +65,19 @@ describe("getAllSkillsDirectories", () => {
     originalEnv = { ...process.env };
 
     // Create temp directory for testing
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "skills-test-"));
+    // Use realpathSync to resolve any symlinks (important on macOS where /var -> /private/var)
+    tempDir = fs.realpathSync(
+      fs.mkdtempSync(path.join(os.tmpdir(), "skills-test-"))
+    );
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     // Restore original state
     process.chdir(originalCwd);
     process.env = originalEnv;
 
-    // Clean up temp directory
-    if (fs.existsSync(tempDir)) {
-      fs.rmSync(tempDir, { recursive: true, force: true });
-    }
+    // Clean up temp directory (with Windows retry logic)
+    await removeDir(tempDir);
   });
 
   it("should include home .claude/skills directory if it exists", () => {
@@ -182,7 +205,10 @@ describe("LocalSkillsServer", () => {
   let server: LocalSkillsServer;
 
   beforeEach(() => {
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "server-test-"));
+    // Use realpathSync to resolve any symlinks (important on macOS where /var -> /private/var)
+    tempDir = fs.realpathSync(
+      fs.mkdtempSync(path.join(os.tmpdir(), "server-test-"))
+    );
     skillsDir = path.join(tempDir, "skills");
     fs.mkdirSync(skillsDir, { recursive: true });
 
@@ -202,10 +228,9 @@ This is test skill content.`
     process.chdir(tempDir);
   });
 
-  afterEach(() => {
-    if (fs.existsSync(tempDir)) {
-      fs.rmSync(tempDir, { recursive: true, force: true });
-    }
+  afterEach(async () => {
+    // Clean up temp directory (with Windows retry logic)
+    await removeDir(tempDir);
   });
 
   it("should create server instance successfully", () => {
@@ -360,8 +385,9 @@ This is test skill content.`
 
   it("should show appropriate message based on skill availability", async () => {
     // Create a brand new isolated temp directory structure
-    const brandNewTemp = fs.mkdtempSync(
-      path.join(os.tmpdir(), "no-skills-test-")
+    // Use realpathSync to resolve any symlinks (important on macOS where /var -> /private/var)
+    const brandNewTemp = fs.realpathSync(
+      fs.mkdtempSync(path.join(os.tmpdir(), "no-skills-test-"))
     );
 
     try {
@@ -403,8 +429,8 @@ This is test skill content.`
       (os as any).homedir = originalHomedir;
       process.chdir(originalCwd);
     } finally {
-      // Cleanup
-      fs.rmSync(brandNewTemp, { recursive: true, force: true });
+      // Cleanup (with Windows retry logic)
+      await removeDir(brandNewTemp);
     }
   });
 
