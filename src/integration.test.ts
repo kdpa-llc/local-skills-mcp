@@ -6,6 +6,28 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 
+/**
+ * Safely remove a directory with retries for Windows file locking issues.
+ * Windows can be slower to release file handles, causing EBUSY errors.
+ */
+async function removeDir(dir: string, retries = 3, delay = 100): Promise<void> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      if (fs.existsSync(dir)) {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+      return;
+    } catch (error: any) {
+      if (error.code === "EBUSY" && i < retries - 1) {
+        // Wait before retrying (Windows needs time to release file handles)
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+      throw error;
+    }
+  }
+}
+
 describe("Integration Tests - MCP Protocol Flow", () => {
   let tempDir: string;
   let skillsDir: string;
@@ -94,9 +116,8 @@ It provides different guidance.`
 
     process.chdir(originalCwd);
 
-    if (fs.existsSync(tempDir)) {
-      fs.rmSync(tempDir, { recursive: true, force: true });
-    }
+    // Clean up temp directory (with Windows retry logic)
+    await removeDir(tempDir);
   });
 
   describe("Server-Client Connection", () => {
@@ -489,7 +510,8 @@ It provides different guidance.`
         await (emptyServer as any).server.close();
       } finally {
         process.chdir(originalCwd);
-        fs.rmSync(emptyDir, { recursive: true, force: true });
+        // Clean up temp directory (with Windows retry logic)
+        await removeDir(emptyDir);
       }
     });
   });
