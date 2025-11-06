@@ -13,7 +13,21 @@ process.setMaxListeners(20);
  */
 async function removeDir(dir: string): Promise<void> {
   if (!fs.existsSync(dir)) {
+    console.log(`[removeDir] Directory does not exist: ${dir}`);
     return;
+  }
+
+  console.log(`[removeDir] Starting cleanup of: ${dir}`);
+
+  // Log what's in the directory before attempting removal
+  try {
+    const contents = fs.readdirSync(dir, { recursive: true });
+    console.log(
+      `[removeDir] Directory contains ${contents.length} items:`,
+      contents
+    );
+  } catch (err: any) {
+    console.log(`[removeDir] Could not list directory contents:`, err.message);
   }
 
   const maxRetries = 10;
@@ -21,6 +35,10 @@ async function removeDir(dir: string): Promise<void> {
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
+      console.log(
+        `[removeDir] Attempt ${attempt + 1}/${maxRetries} to remove: ${dir}`
+      );
+
       // Use fs.rmSync with built-in retry options (Node 14.14+)
       fs.rmSync(dir, {
         recursive: true,
@@ -28,8 +46,16 @@ async function removeDir(dir: string): Promise<void> {
         maxRetries: 5,
         retryDelay: 100,
       });
+
+      console.log(`[removeDir] ✓ Successfully removed: ${dir}`);
       return; // Success
     } catch (error: any) {
+      console.log(
+        `[removeDir] ✗ Attempt ${attempt + 1} failed:`,
+        error.code,
+        error.message
+      );
+
       // Handle retryable errors: EBUSY, ENOTEMPTY, EPERM (common on Windows)
       const isRetryable =
         error.code === "EBUSY" ||
@@ -39,6 +65,7 @@ async function removeDir(dir: string): Promise<void> {
       if (isRetryable && attempt < maxRetries - 1) {
         // Exponential backoff: wait progressively longer on Windows
         const delay = baseDelay * (attempt + 1);
+        console.log(`[removeDir] Waiting ${delay}ms before retry...`);
         await new Promise((resolve) => setTimeout(resolve, delay));
         continue;
       }
@@ -46,9 +73,26 @@ async function removeDir(dir: string): Promise<void> {
       // Not a retryable error or max retries exceeded
       if (attempt === maxRetries - 1) {
         console.warn(
-          `Failed to remove directory ${dir} after ${maxRetries} attempts:`,
+          `[removeDir] ⚠️ Failed to remove directory ${dir} after ${maxRetries} attempts:`,
           error.message
         );
+
+        // Try to provide more diagnostic info on Windows
+        if (process.platform === "win32") {
+          try {
+            console.log(
+              `[removeDir] Directory still exists:`,
+              fs.existsSync(dir)
+            );
+            if (fs.existsSync(dir)) {
+              const contents = fs.readdirSync(dir, { recursive: true });
+              console.log(`[removeDir] Remaining items:`, contents);
+            }
+          } catch {
+            // Ignore
+          }
+        }
+
         // Don't throw - allow tests to continue
         return;
       }
@@ -241,20 +285,29 @@ describe("LocalSkillsServer", () => {
   let tempDir: string;
   let skillsDir: string;
   let server: LocalSkillsServer | null = null;
+  let testName = "";
 
   beforeEach(() => {
+    // Capture current test name for logging
+    testName = expect.getState().currentTestName || "unknown";
+    console.log(`\n[beforeEach] Starting test: ${testName}`);
+
     // Use realpathSync to resolve any symlinks (important on macOS where /var -> /private/var)
     tempDir = fs.realpathSync(
       fs.mkdtempSync(path.join(os.tmpdir(), "server-test-"))
     );
+    console.log(`[beforeEach] Created temp directory: ${tempDir}`);
+
     skillsDir = path.join(tempDir, "skills");
     fs.mkdirSync(skillsDir, { recursive: true });
+    console.log(`[beforeEach] Created skills directory: ${skillsDir}`);
 
     // Create test skills
     const testSkillDir = path.join(skillsDir, "test-skill");
     fs.mkdirSync(testSkillDir, { recursive: true });
+    const skillFile = path.join(testSkillDir, "SKILL.md");
     fs.writeFileSync(
-      path.join(testSkillDir, "SKILL.md"),
+      skillFile,
       `---
 name: test-skill
 description: A test skill for unit testing
@@ -262,37 +315,79 @@ description: A test skill for unit testing
 
 This is test skill content.`
     );
+    console.log(`[beforeEach] Created test skill file: ${skillFile}`);
 
+    console.log(`[beforeEach] Changing directory to: ${tempDir}`);
     process.chdir(tempDir);
+    console.log(`[beforeEach] Current directory: ${process.cwd()}`);
   });
 
   afterEach(async () => {
+    console.log(`\n[afterEach] Cleaning up test: ${testName}`);
+
     // CRITICAL: Close server BEFORE cleaning up files (important for Windows)
     if (server) {
+      console.log(`[afterEach] Closing server instance...`);
       try {
         await server.close();
+        console.log(`[afterEach] ✓ Server closed successfully`);
       } catch (err) {
-        console.warn("Error closing server:", err);
+        console.warn("[afterEach] ✗ Error closing server:", err);
       }
       server = null;
+    } else {
+      console.log(`[afterEach] No server instance to close`);
     }
 
     // Wait for all file handles to be released (Windows needs significantly more time)
     // Windows file system takes longer to release handles compared to Unix systems
     const cleanupDelay = process.platform === "win32" ? 1000 : 200;
+    console.log(
+      `[afterEach] Waiting ${cleanupDelay}ms for handles to be released...`
+    );
     await new Promise((resolve) => setTimeout(resolve, cleanupDelay));
+
+    console.log(
+      `[afterEach] Current directory before cleanup: ${process.cwd()}`
+    );
+
+    // CRITICAL: On Windows, if cwd is inside the directory we're trying to delete, it will be locked
+    // Change to parent directory or temp root to release the lock
+    const cwd = process.cwd();
+    if (cwd.startsWith(tempDir)) {
+      console.log(
+        `[afterEach] ⚠️ CWD is inside tempDir, changing to parent...`
+      );
+      const safeCwd =
+        process.platform === "win32" ? os.tmpdir() : path.dirname(tempDir);
+      process.chdir(safeCwd);
+      console.log(`[afterEach] Changed CWD to: ${process.cwd()}`);
+
+      // On Windows, even after changing directory, the OS needs time to release the lock
+      if (process.platform === "win32") {
+        console.log(
+          `[afterEach] Waiting additional 500ms for Windows to release directory lock...`
+        );
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+    }
 
     // THEN clean up temp directory
     await removeDir(tempDir);
+    console.log(`[afterEach] ✓ Cleanup complete for test: ${testName}\n`);
   });
 
   it("should create server instance successfully", () => {
+    console.log(`[test] Creating LocalSkillsServer instance...`);
     server = new LocalSkillsServer();
+    console.log(`[test] ✓ Server instance created`);
     expect(server).toBeDefined();
   });
 
   it("should register ListTools handler", async () => {
+    console.log(`[test] Creating LocalSkillsServer instance...`);
     server = new LocalSkillsServer();
+    console.log(`[test] ✓ Server instance created`);
 
     // Access the server's internal state through type assertion
     const serverInternal = server as any;
