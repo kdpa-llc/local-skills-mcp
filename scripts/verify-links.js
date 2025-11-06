@@ -7,7 +7,7 @@
  * Checks internal links and external URLs (with optional network check).
  */
 
-import { readFileSync, existsSync, readdirSync, statSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import { resolve, join, dirname } from "path";
 import { fileURLToPath } from "url";
 
