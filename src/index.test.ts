@@ -8,19 +8,49 @@ import os from "os";
  * Safely remove a directory with retries for Windows file locking issues.
  * Windows can be slower to release file handles, causing EBUSY errors.
  */
-async function removeDir(dir: string, retries = 3, delay = 100): Promise<void> {
-  for (let i = 0; i < retries; i++) {
+async function removeDir(dir: string): Promise<void> {
+  if (!fs.existsSync(dir)) {
+    return;
+  }
+
+  const maxRetries = 10;
+  const baseDelay = 100;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      if (fs.existsSync(dir)) {
-        fs.rmSync(dir, { recursive: true, force: true });
-      }
-      return;
+      // Use fs.rmSync with built-in retry options (Node 14.14+)
+      fs.rmSync(dir, {
+        recursive: true,
+        force: true,
+        maxRetries: 5,
+        retryDelay: 100,
+      });
+      return; // Success
     } catch (error: any) {
-      if (error.code === "EBUSY" && i < retries - 1) {
-        // Wait before retrying (Windows needs time to release file handles)
+      // Handle retryable errors: EBUSY, ENOTEMPTY, EPERM (common on Windows)
+      const isRetryable =
+        error.code === "EBUSY" ||
+        error.code === "ENOTEMPTY" ||
+        error.code === "EPERM";
+
+      if (isRetryable && attempt < maxRetries - 1) {
+        // Exponential backoff: wait progressively longer on Windows
+        const delay = baseDelay * (attempt + 1);
         await new Promise((resolve) => setTimeout(resolve, delay));
         continue;
       }
+
+      // Not a retryable error or max retries exceeded
+      if (attempt === maxRetries - 1) {
+        console.warn(
+          `Failed to remove directory ${dir} after ${maxRetries} attempts:`,
+          error.message
+        );
+        // Don't throw - allow tests to continue
+        return;
+      }
+
+      // For non-retryable errors, throw immediately
       throw error;
     }
   }
@@ -165,8 +195,13 @@ describe("getAllSkillsDirectories", () => {
     // With the new implementation, package built-in skills should always be included
     // The package skills directory should be present even when no other directories exist
     expect(dirs.length).toBeGreaterThan(0);
-    // The package skills path should include '/skills' at the end
-    expect(dirs.some((dir) => dir.endsWith("/skills"))).toBe(true);
+    // The package skills path should include 'skills' at the end (cross-platform check)
+    expect(
+      dirs.some((dir) => {
+        const parts = dir.split(path.sep);
+        return parts[parts.length - 1] === "skills";
+      })
+    ).toBe(true);
   });
 
   it("should prioritize directories correctly", () => {

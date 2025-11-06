@@ -140,14 +140,31 @@ class StdioMCPClient {
   async stop(): Promise<void> {
     if (this.serverProcess) {
       return new Promise((resolve) => {
-        this.serverProcess!.once("exit", () => resolve());
-        this.serverProcess!.kill();
+        let resolved = false;
+
+        const doResolve = () => {
+          if (!resolved) {
+            resolved = true;
+            resolve();
+          }
+        };
+
+        // Listen for exit event
+        this.serverProcess!.once("exit", () => {
+          // Wait a bit for all handles to be released
+          setTimeout(doResolve, 200);
+        });
+
+        // Try graceful shutdown first
+        this.serverProcess!.kill("SIGTERM");
+
         // Force kill after timeout
         setTimeout(() => {
           if (this.serverProcess && !this.serverProcess.killed) {
             this.serverProcess.kill("SIGKILL");
           }
-          resolve();
+          // Ensure we resolve even if exit event doesn't fire
+          setTimeout(doResolve, 300);
         }, 1000);
       });
     }
@@ -165,6 +182,8 @@ describe("E2E Tests - Subprocess with Stdio Transport", () => {
 
   afterEach(async () => {
     await client.stop();
+    // Wait for all file handles to be released before starting next test
+    await new Promise((resolve) => setTimeout(resolve, 100));
   });
 
   describe("Server Initialization", () => {
