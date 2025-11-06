@@ -43,7 +43,10 @@ describe("getAllSkillsDirectories", () => {
     originalEnv = { ...process.env };
 
     // Create temp directory for testing
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "skills-test-"));
+    // Use realpathSync to resolve any symlinks (important on macOS where /var -> /private/var)
+    tempDir = fs.realpathSync(
+      fs.mkdtempSync(path.join(os.tmpdir(), "skills-test-"))
+    );
   });
 
   afterEach(() => {
@@ -182,7 +185,10 @@ describe("LocalSkillsServer", () => {
   let server: LocalSkillsServer;
 
   beforeEach(() => {
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "server-test-"));
+    // Use realpathSync to resolve any symlinks (important on macOS where /var -> /private/var)
+    tempDir = fs.realpathSync(
+      fs.mkdtempSync(path.join(os.tmpdir(), "server-test-"))
+    );
     skillsDir = path.join(tempDir, "skills");
     fs.mkdirSync(skillsDir, { recursive: true });
 
@@ -360,8 +366,9 @@ This is test skill content.`
 
   it("should show appropriate message based on skill availability", async () => {
     // Create a brand new isolated temp directory structure
-    const brandNewTemp = fs.mkdtempSync(
-      path.join(os.tmpdir(), "no-skills-test-")
+    // Use realpathSync to resolve any symlinks (important on macOS where /var -> /private/var)
+    const brandNewTemp = fs.realpathSync(
+      fs.mkdtempSync(path.join(os.tmpdir(), "no-skills-test-"))
     );
 
     try {

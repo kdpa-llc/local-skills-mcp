@@ -19,7 +19,10 @@ describe("Integration Tests - MCP Protocol Flow", () => {
     originalCwd = process.cwd();
 
     // Create temporary directory for test fixtures
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "integration-test-"));
+    // Use realpathSync to resolve any symlinks (important on macOS where /var -> /private/var)
+    tempDir = fs.realpathSync(
+      fs.mkdtempSync(path.join(os.tmpdir(), "integration-test-"))
+    );
     skillsDir = path.join(tempDir, "skills");
     fs.mkdirSync(skillsDir, { recursive: true });
 
@@ -446,7 +449,10 @@ It provides different guidance.`
   describe("Empty Skills Directory", () => {
     it("should handle empty skills directory gracefully", async () => {
       // Create empty temp directory
-      const emptyDir = fs.mkdtempSync(path.join(os.tmpdir(), "empty-test-"));
+      // Use realpathSync to resolve any symlinks (important on macOS where /var -> /private/var)
+      const emptyDir = fs.realpathSync(
+        fs.mkdtempSync(path.join(os.tmpdir(), "empty-test-"))
+      );
       const emptySkillsDir = path.join(emptyDir, "skills");
       fs.mkdirSync(emptySkillsDir, { recursive: true });
 
