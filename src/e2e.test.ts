@@ -61,14 +61,14 @@ class StdioMCPClient {
         if (!message.includes('Skill directory') && !message.includes('does not exist')) {
           console.error('Server stderr:', message);
         }
+        if (message.includes('running on stdio')) {
+          resolve();
+        }
       });
 
       this.serverProcess.on('error', (err) => {
         reject(err);
       });
-
-      // Give the server a moment to start
-      setTimeout(() => resolve(), 500);
     });
   }
 
