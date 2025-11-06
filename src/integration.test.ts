@@ -118,8 +118,9 @@ It provides different guidance.`
       // Ignore cleanup errors
     }
 
-    // Wait for all file handles to be released (Windows needs extra time)
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    // Wait for all file handles to be released (Windows needs significantly more time)
+    const cleanupDelay = process.platform === "win32" ? 1000 : 200;
+    await new Promise((resolve) => setTimeout(resolve, cleanupDelay));
 
     process.chdir(originalCwd);
 

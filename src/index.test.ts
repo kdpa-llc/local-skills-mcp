@@ -277,8 +277,10 @@ This is test skill content.`
       server = null;
     }
 
-    // Wait for all file handles to be released (Windows needs extra time)
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    // Wait for all file handles to be released (Windows needs significantly more time)
+    // Windows file system takes longer to release handles compared to Unix systems
+    const cleanupDelay = process.platform === "win32" ? 1000 : 200;
+    await new Promise((resolve) => setTimeout(resolve, cleanupDelay));
 
     // THEN clean up temp directory
     await removeDir(tempDir);
