@@ -5,6 +5,7 @@ export default defineConfig({
     globals: true,
     environment: "node",
     testTimeout: 60000, // 60 seconds for e2e tests on slower CI environments
+    hookTimeout: 60000, // 60 seconds for setup/teardown hooks on slower CI environments
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html", "lcov"],

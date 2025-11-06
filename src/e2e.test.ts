@@ -77,8 +77,8 @@ class StdioMCPClient {
         reject(err);
       });
 
-      // Give the server a moment to start
-      setTimeout(() => resolve(), 500);
+      // Give the server time to start (longer for slower CI environments like macOS)
+      setTimeout(() => resolve(), 2000);
     });
   }
 
@@ -119,7 +119,7 @@ class StdioMCPClient {
       const timeout = setTimeout(() => {
         this.responseHandlers.delete(id);
         reject(new Error(`Request timeout for method: ${method}`));
-      }, 30000); // Increased timeout for slower CI environments
+      }, 15000); // Increased timeout for slower CI environments
 
       this.responseHandlers.set(id, (response: JsonRpcResponse) => {
         clearTimeout(timeout);
