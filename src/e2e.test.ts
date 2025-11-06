@@ -45,9 +45,17 @@ class StdioMCPClient {
 
   async start(serverPath: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.serverProcess = spawn("node", [serverPath], {
+      // Windows-specific spawn options
+      const spawnOptions: any = {
         stdio: ["pipe", "pipe", "pipe"],
-      });
+      };
+
+      // On Windows, hide the console window
+      if (process.platform === "win32") {
+        spawnOptions.windowsHide = true;
+      }
+
+      this.serverProcess = spawn("node", [serverPath], spawnOptions);
 
       if (
         !this.serverProcess.stdout ||
@@ -78,6 +86,13 @@ class StdioMCPClient {
 
       this.serverProcess.on("error", (err) => {
         reject(err);
+      });
+
+      // Handle unexpected exits during startup
+      this.serverProcess.on("exit", (code) => {
+        if (code !== null && code !== 0) {
+          reject(new Error(`Server exited with code ${code} during startup`));
+        }
       });
 
       // Give the server time to start (longer for slower CI environments)
@@ -148,40 +163,65 @@ class StdioMCPClient {
         const doResolve = () => {
           if (!resolved) {
             resolved = true;
+            // Clear any pending response handlers to prevent memory leaks
+            this.responseHandlers.clear();
+            this.serverProcess = null;
             resolve();
           }
         };
 
+        // Close stdin first to signal EOF (important on Windows)
+        if (this.serverProcess!.stdin && !this.serverProcess!.stdin.destroyed) {
+          try {
+            this.serverProcess!.stdin.end();
+            this.serverProcess!.stdin.destroy();
+          } catch {
+            // Ignore errors during cleanup
+          }
+        }
+
+        // Remove all listeners to prevent memory leaks
+        if (this.serverProcess!.stdout) {
+          this.serverProcess!.stdout.removeAllListeners();
+        }
+        if (this.serverProcess!.stderr) {
+          this.serverProcess!.stderr.removeAllListeners();
+        }
+
         // Listen for exit event
         this.serverProcess!.once("exit", () => {
-          // Wait a bit for all handles to be released (Windows needs more time)
-          setTimeout(doResolve, 300);
+          // Wait for all handles to be released (Windows needs more time)
+          const exitDelay = process.platform === "win32" ? 500 : 300;
+          setTimeout(doResolve, exitDelay);
         });
 
-        // On Windows, SIGTERM might not work properly - use SIGINT first
+        // On Windows, SIGTERM doesn't work - use SIGINT for graceful shutdown
         const signal = process.platform === "win32" ? "SIGINT" : "SIGTERM";
-        this.serverProcess!.kill(signal);
+        try {
+          this.serverProcess!.kill(signal);
+        } catch {
+          // Process might already be dead
+        }
 
-        // Force kill after timeout (Windows needs more time)
-        const forceKillTimeout = process.platform === "win32" ? 1500 : 1000;
+        // Force kill after timeout (Windows needs more time for graceful shutdown)
+        const forceKillTimeout = process.platform === "win32" ? 2000 : 1000;
         setTimeout(() => {
           if (this.serverProcess && !this.serverProcess.killed) {
-            this.serverProcess.kill("SIGKILL");
+            try {
+              this.serverProcess.kill("SIGKILL");
+            } catch {
+              // Process might already be dead
+            }
           }
           // Ensure we resolve even if exit event doesn't fire
-          setTimeout(doResolve, 500);
+          setTimeout(doResolve, 1000);
         }, forceKillTimeout);
       });
     }
   }
 }
 
-// Skip E2E tests on Windows - subprocess stdio communication has platform-specific issues
-// that require deeper investigation. Unit and integration tests provide sufficient coverage.
-// TODO: Fix Windows subprocess stdio handling and remove this skip
-const describeE2E = process.platform === "win32" ? describe.skip : describe;
-
-describeE2E("E2E Tests - Subprocess with Stdio Transport", () => {
+describe("E2E Tests - Subprocess with Stdio Transport", () => {
   let client: StdioMCPClient;
   const serverPath = resolve(__dirname, "../dist/index.js");
 
@@ -193,8 +233,8 @@ describeE2E("E2E Tests - Subprocess with Stdio Transport", () => {
   afterEach(async () => {
     await client.stop();
     // Wait for all file handles to be released before starting next test
-    // Windows needs extra time for handle cleanup
-    const cleanupDelay = process.platform === "win32" ? 200 : 100;
+    // Windows needs significantly more time for complete process cleanup
+    const cleanupDelay = process.platform === "win32" ? 1000 : 100;
     await new Promise((resolve) => setTimeout(resolve, cleanupDelay));
   });
 
