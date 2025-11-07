@@ -180,12 +180,22 @@ class StdioMCPClient {
           }
         }
 
-        // Remove all listeners to prevent memory leaks
+        // Remove all listeners and destroy streams to prevent file handle leaks
         if (this.serverProcess!.stdout) {
           this.serverProcess!.stdout.removeAllListeners();
+          try {
+            this.serverProcess!.stdout.destroy();
+          } catch {
+            // Ignore errors during cleanup
+          }
         }
         if (this.serverProcess!.stderr) {
           this.serverProcess!.stderr.removeAllListeners();
+          try {
+            this.serverProcess!.stderr.destroy();
+          } catch {
+            // Ignore errors during cleanup
+          }
         }
 
         // Listen for exit event
