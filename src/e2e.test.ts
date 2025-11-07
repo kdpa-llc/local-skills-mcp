@@ -231,7 +231,11 @@ class StdioMCPClient {
   }
 }
 
-describe("E2E Tests - Subprocess with Stdio Transport", () => {
+// Skip E2E tests on Windows - subprocess stdio has platform-specific issues
+// See WINDOWS_E2E_ISSUE.md for details and tracking
+const describeE2E = process.platform === "win32" ? describe.skip : describe;
+
+describeE2E("E2E Tests - Subprocess with Stdio Transport", () => {
   let client: StdioMCPClient;
   const serverPath = resolve(__dirname, "../dist/index.js");
 
