@@ -4,13 +4,14 @@ import YAML from "yaml";
 import { Skill, SkillMetadata } from "./types.js";
 
 /**
- * Manages skill discovery, loading, and caching across multiple directories.
+ * Manages skill discovery and loading across multiple directories.
  *
  * SkillLoader is responsible for:
  * - Discovering skills in configured directories
  * - Loading and parsing SKILL.md files with YAML frontmatter
- * - Caching loaded skills for performance
  * - Managing the skill registry for fast lookups
+ *
+ * Skills are loaded fresh from disk on each request to support hot reload.
  *
  * @example
  * ```typescript
@@ -24,7 +25,6 @@ import { Skill, SkillMetadata } from "./types.js";
  */
 export class SkillLoader {
   private skillsPaths: string[];
-  private skillCache = new Map<string, Skill>();
   private skillRegistry = new Map<string, { path: string; source: string }>();
 
   /**
@@ -140,11 +140,10 @@ export class SkillLoader {
   }
 
   /**
-   * Load a specific skill by name with lazy loading and caching.
+   * Load a specific skill by name, reading fresh from disk each time.
    *
-   * First checks the cache for previously loaded skills. If not cached,
-   * loads the SKILL.md file, parses YAML frontmatter, validates metadata,
-   * and caches the result for subsequent calls.
+   * Loads the SKILL.md file, parses YAML frontmatter, and validates metadata.
+   * Skills are always read fresh to support hot reload of content changes.
    *
    * @param skillName - The name of the skill to load
    * @returns Promise resolving to the complete Skill object
@@ -171,12 +170,6 @@ export class SkillLoader {
    * ```
    */
   async loadSkill(skillName: string): Promise<Skill> {
-    // Check cache first
-    const cachedSkill = this.skillCache.get(skillName);
-    if (cachedSkill) {
-      return cachedSkill;
-    }
-
     // Get skill location from registry
     const skillInfo = this.skillRegistry.get(skillName);
     if (!skillInfo) {
@@ -188,7 +181,7 @@ export class SkillLoader {
     const skillFilePath = path.join(skillInfo.path, "SKILL.md");
 
     try {
-      // Load and parse SKILL.md
+      // Load and parse SKILL.md fresh from disk
       const fileContent = await fs.readFile(skillFilePath, "utf-8");
       const { metadata, content } = this.parseSkillFile(fileContent);
 
@@ -199,9 +192,6 @@ export class SkillLoader {
         path: skillInfo.path,
         source: skillInfo.source,
       };
-
-      // Cache the skill
-      this.skillCache.set(skillName, skill);
 
       return skill;
     } catch (error) {

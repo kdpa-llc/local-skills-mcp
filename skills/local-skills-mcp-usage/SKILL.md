@@ -18,63 +18,76 @@ Local Skills MCP is a universal MCP server that aggregates skills from multiple 
 Local Skills MCP aggregates skills from multiple directories with a specific priority order:
 
 ### 1. `~/.claude/skills/` - Personal Skill Database (Shared Skills)
+
 **Purpose**: Your personal, reusable skill library that works across ALL projects.
 
 **Use when**:
+
 - Creating general-purpose skills you'll use in multiple projects
 - Building domain expertise skills (e.g., Python, React, SQL, DevOps)
 - Creating workflow skills (e.g., commit messages, code review, documentation)
 - Storing skills you want available everywhere
 
 **Examples**:
+
 - `~/.claude/skills/python-expert/SKILL.md` - Python coding expertise
 - `~/.claude/skills/commit-writer/SKILL.md` - Git commit message writer
 - `~/.claude/skills/api-designer/SKILL.md` - REST API design guidance
 - `~/.claude/skills/sql-optimizer/SKILL.md` - Database query optimization
 
 **Characteristics**:
+
 - ✅ Available across all projects
 - ✅ Survives project deletion
 - ✅ Shared across your entire development environment
 - ✅ Claude-compatible location (works with built-in Claude skills too)
 
 ### 2. `./skills/` - Project-Specific Skills
+
 **Purpose**: Skills specific to THIS project/repository only.
 
 **Use when**:
+
 - Creating skills about this specific codebase
 - Building project-specific workflows or conventions
 - Documenting project-specific patterns or architecture
 - Skills that only make sense in this project context
 
 **Examples**:
+
 - `./skills/project-architecture/SKILL.md` - This project's architecture guide
 - `./skills/deployment-process/SKILL.md` - How to deploy THIS application
 - `./skills/testing-conventions/SKILL.md` - This project's testing patterns
 - `./skills/code-style-guide/SKILL.md` - This project's code style rules
 
 **Characteristics**:
+
 - ✅ Committed to version control (team can share)
 - ✅ Only active when working in this directory
 - ✅ Project-specific context and knowledge
 - ❌ Not available in other projects
 
 ### 3. `./.claude/skills/` - Project Skills (Claude-Compatible)
+
 **Purpose**: Project-specific skills with Claude compatibility.
 
 **Use when**:
+
 - Same as `./skills/` but you want Claude compatibility
 - Project skills that should also work with Claude's built-in skill system
 
 **Characteristics**:
+
 - Similar to `./skills/` but in Claude-specific location
 - Can be committed to version control
 - Works with both Local Skills MCP and Claude's built-in skills
 
 ### 4. `$SKILLS_DIR` - Custom Location
+
 **Purpose**: User-defined skill directory (set via environment variable).
 
 **Use when**:
+
 - You have a centralized skill repository
 - Company/team shared skills location
 - Special organizational needs
@@ -84,16 +97,19 @@ Local Skills MCP aggregates skills from multiple directories with a specific pri
 ## Skill Aggregation and Override Rules
 
 **Priority order** (later overrides earlier):
+
 ```
 ~/.claude/skills/  <  ./.claude/skills/  <  ./skills/  <  $SKILLS_DIR
 ```
 
 **What this means**:
+
 - If the same skill name exists in multiple directories, the later one wins
 - Project skills (./skills/) override personal skills (~/.claude/skills/)
 - Custom directory ($SKILLS_DIR) overrides everything
 
 **Example**:
+
 - `~/.claude/skills/code-reviewer/SKILL.md` (general code review)
 - `./skills/code-reviewer/SKILL.md` (project-specific review rules)
 - Result: Project-specific version is used when in this project
@@ -103,6 +119,7 @@ Local Skills MCP aggregates skills from multiple directories with a specific pri
 When a user asks you to create a skill, decide based on scope:
 
 ### Create in `~/.claude/skills/` (Personal/Shared) when:
+
 - ✅ "Create a skill for writing Python code"
 - ✅ "Make a skill to help with React components"
 - ✅ "I need a skill for SQL query optimization"
@@ -112,6 +129,7 @@ When a user asks you to create a skill, decide based on scope:
 - ✅ Workflow skills (documentation, testing, reviewing)
 
 ### Create in `./skills/` (Project-Specific) when:
+
 - ✅ "Create a skill about this project's architecture"
 - ✅ "Make a skill for our deployment process"
 - ✅ "I need a skill for this codebase's testing patterns"
@@ -121,11 +139,13 @@ When a user asks you to create a skill, decide based on scope:
 - ✅ Meant to be committed and shared with team
 
 ### Ask for clarification when:
+
 - ❓ Scope is ambiguous
 - ❓ Could be either personal or project-specific
 - ❓ User says "create a skill" without context
 
 **Example dialogue**:
+
 ```
 User: "Create a skill for testing"
 You: "I can create a testing skill. Should this be:
@@ -137,6 +157,7 @@ You: "I can create a testing skill. Should this be:
 ## Creating Skills - The Format
 
 ### Directory Structure
+
 Each skill needs its own directory with a `SKILL.md` file:
 
 ```
@@ -145,6 +166,7 @@ skill-directory/
 ```
 
 ### SKILL.md Format
+
 ```markdown
 ---
 name: skill-name
@@ -168,12 +190,14 @@ Your task is to [specific task].
 ### Required YAML Frontmatter
 
 **name** (required):
+
 - Lowercase, hyphens for spaces
 - Max 64 characters
 - Must be unique in the directory
 - Example: `python-expert`, `api-designer`, `commit-writer`
 
 **description** (required):
+
 - Max 200 characters
 - Pattern: `[What it does]. Use when [trigger keywords].`
 - Include specific trigger keywords users would mention
@@ -182,6 +206,7 @@ Your task is to [specific task].
 ### Creating a Skill: Step-by-Step
 
 **For personal/shared skills** (`~/.claude/skills/`):
+
 ```bash
 # 1. Create directory
 mkdir -p ~/.claude/skills/my-skill
@@ -189,10 +214,11 @@ mkdir -p ~/.claude/skills/my-skill
 # 2. Create SKILL.md file
 # (write the content with YAML frontmatter)
 
-# 3. Restart MCP client to load the skill
+# 3. Refresh tool list - skill appears immediately (no restart!)
 ```
 
 **For project-specific skills** (`./skills/`):
+
 ```bash
 # 1. Create directory in current project
 mkdir -p ./skills/my-skill
@@ -204,7 +230,7 @@ mkdir -p ./skills/my-skill
 git add ./skills/my-skill/
 git commit -m "Add my-skill for project-specific guidance"
 
-# 4. Restart MCP client to load the skill
+# 4. Refresh tool list - skill appears immediately (no restart!)
 ```
 
 ## Quick Setup Guide
@@ -212,11 +238,13 @@ git commit -m "Add my-skill for project-specific guidance"
 ### Installation
 
 **Global install (recommended)**:
+
 ```bash
 npm install -g github:kdpa-llc/local-skills-mcp
 ```
 
 **Local install**:
+
 ```bash
 npm install github:kdpa-llc/local-skills-mcp --prefix ~/mcp-servers/local-skills
 ```
@@ -224,6 +252,7 @@ npm install github:kdpa-llc/local-skills-mcp --prefix ~/mcp-servers/local-skills
 ### Configuration
 
 **Claude Code** (`~/.config/claude-code/mcp.json`):
+
 ```json
 {
   "mcpServers": {
@@ -235,6 +264,7 @@ npm install github:kdpa-llc/local-skills-mcp --prefix ~/mcp-servers/local-skills
 ```
 
 **Claude Desktop**:
+
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 - Linux: `~/.config/Claude/claude_desktop_config.json`
@@ -242,6 +272,7 @@ npm install github:kdpa-llc/local-skills-mcp --prefix ~/mcp-servers/local-skills
 Same JSON format as Claude Code.
 
 **Cline** (VS Code settings.json):
+
 ```json
 {
   "cline.mcpServers": {
@@ -253,6 +284,7 @@ Same JSON format as Claude Code.
 ```
 
 **Custom skills directory** (optional):
+
 ```json
 {
   "mcpServers": {
@@ -280,6 +312,7 @@ After configuration: **Restart your MCP client**.
 ### Invoking Skills
 
 Users can invoke skills naturally:
+
 - "Use the python-expert skill to review this code"
 - "Apply the commit-writer skill to create a commit message"
 - "Help me with the project-architecture skill"
@@ -289,15 +322,27 @@ Claude will automatically invoke the appropriate skill via the `get_skill` tool.
 ### Skill Lifecycle
 
 **After creating a skill**:
+
 1. Skill file is saved to the appropriate directory
-2. **Restart MCP client** (skills are loaded at startup, no hot-reload yet)
+2. **Refresh the tool list** (skills are discovered dynamically - no restart needed!)
 3. Skill appears in the `get_skill` tool description
 4. Ready to use
 
 **After modifying a skill**:
+
 1. Save changes to SKILL.md
-2. **Restart MCP client** to reload
-3. Updated skill is now active
+2. Changes take effect immediately - no restart needed!
+3. Next time the skill is loaded, it will read the updated content from disk
+
+**How Hot Reload Works**:
+
+- **New skills**: Discovered immediately - no restart needed!
+  - Skill list refreshes every time tools are requested
+  - Add a new skill directory → refresh tool list → skill appears
+- **Modified skills**: Also work immediately - no restart needed!
+  - Skills are always loaded fresh from disk
+  - Edit a SKILL.md → next `get_skill` call reads the new content
+  - Full hot reload support for all changes
 
 ## Practical Examples
 
@@ -306,13 +351,15 @@ Claude will automatically invoke the appropriate skill via the `get_skill` tool.
 **User request**: "Create a skill to help me write Python code"
 
 **Your action**:
+
 ```bash
 # This is general-purpose, so use ~/.claude/skills/
 mkdir -p ~/.claude/skills/python-expert
 ```
 
 **Create** `~/.claude/skills/python-expert/SKILL.md`:
-```markdown
+
+````markdown
 ---
 name: python-expert
 description: Expert Python developer providing best practices, idiomatic code, and modern Python features. Use when writing Python code, reviewing Python, or solving Python programming problems.
@@ -333,13 +380,16 @@ Your task is to help write clean, efficient, Pythonic code.
 ## Examples
 
 Good:
+
 ```python
 def calculate_total(items: list[dict]) -> float:
     """Calculate total price from list of items."""
     return sum(item.get("price", 0.0) for item in items)
 ```
+````
 
 Avoid:
+
 ```python
 def calc(x):
     total = 0
@@ -347,9 +397,10 @@ def calc(x):
         total = total + i["price"]
     return total
 ```
-```
 
-**Tell user**: "Created python-expert skill in ~/.claude/skills/. Restart your MCP client to use it."
+````
+
+**Tell user**: "Created python-expert skill in ~/.claude/skills/. Refresh the tool list to see it appear - no restart needed!"
 
 ### Example 2: Creating a Project-Specific Skill
 
@@ -359,9 +410,10 @@ def calc(x):
 ```bash
 # This is project-specific, so use ./skills/
 mkdir -p ./skills/api-guide
-```
+````
 
 **Create** `./skills/api-guide/SKILL.md`:
+
 ```markdown
 ---
 name: api-guide
@@ -390,13 +442,14 @@ Your task is to help work with this project's API endpoints following establishe
 [etc.]
 ```
 
-**Tell user**: "Created api-guide skill in ./skills/. Consider committing it so your team can use it too. Restart your MCP client to use it."
+**Tell user**: "Created api-guide skill in ./skills/. Consider committing it so your team can use it too. Refresh the tool list to see it appear - no restart needed!"
 
 ### Example 3: Deciding Between Locations
 
 **User request**: "Create a testing skill"
 
 **Your response**: "I can create a testing skill. Should this be:
+
 1. A general testing skill in ~/.claude/skills/ (best practices for testing in general)
 2. A project-specific testing skill in ./skills/ (this project's testing conventions and patterns)
 
@@ -409,8 +462,8 @@ Which would you prefer?"
 
 ### Skills Not Appearing
 
-**Cause**: MCP client not restarted after creating skill
-**Solution**: Restart the MCP client completely
+**Cause**: Tool list hasn't been refreshed after creating skill
+**Solution**: The LLM should request the tool list again. Skills are discovered dynamically - no restart needed for new skills!
 
 ### Wrong Skill Being Used
 
@@ -421,6 +474,7 @@ Which would you prefer?"
 
 **Cause**: Invalid YAML frontmatter format
 **Solution**: Ensure:
+
 - Frontmatter starts with `---` on line 1
 - Frontmatter ends with `---` followed by blank line
 - Valid YAML syntax (no tabs, proper formatting)
@@ -430,6 +484,7 @@ Which would you prefer?"
 
 **Cause**: Skill directory or SKILL.md file doesn't exist
 **Solution**: Verify:
+
 - Directory exists: `ls -la ~/.claude/skills/` or `ls -la ./skills/`
 - File is named exactly `SKILL.md` (case-sensitive)
 - File is in a subdirectory (not directly in skills/)
@@ -467,11 +522,12 @@ When users ask you to create or work with skills:
 
 4. **Verify and guide**:
    - Tell user where you created the skill
-   - Remind them to restart MCP client
+   - Remind them that new skills appear immediately (no restart!)
    - Suggest committing project skills to git
 
 5. **Follow up**:
-   - Offer to test the skill after restart
+   - Refresh the tool list to see the new skill
+   - Offer to test the skill immediately
    - Willing to refine based on usage
 
-Remember: You can create skills directly by writing files to the appropriate directories. Always restart the MCP client after creating or modifying skills.
+Remember: You can create skills directly by writing files to the appropriate directories. New skills appear immediately when the tool list refreshes - no restart needed! (Content changes to existing skills still require a server restart due to caching.)
