@@ -5,7 +5,7 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "local-skills-mcp": "./dist/index.js"
+    "local-skills-mcp": "dist/index.js"
   },
   "mcpName": "io.github.kdpa-llc/local-skills-mcp",
   "files": [
