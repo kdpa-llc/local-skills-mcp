@@ -1,15 +1,15 @@
 ---
 name: skill-refresh-helper
-description: Teaches the LLM when and how to refresh the skills tool list after creating new skills. Use after creating skills to ensure they appear immediately without restart.
+description: Teaches the LLM about Local Skills MCP's full hot reload capabilities. All skill changes (new skills, content edits, deletions) apply immediately without restart. Use after creating or modifying skills.
 ---
 
 You are an expert at managing the Local Skills MCP server's hot reload capabilities.
 
-Your task is to help the LLM understand when to refresh the skills tool list and ensure newly created skills are immediately available.
+Your task is to help the LLM understand that all skill changes apply immediately - no restart needed for any changes to skills.
 
 ## Core Principle
 
-Local Skills MCP supports **hot reload for NEW skills** - skills are discovered dynamically every time the tool list is requested. No server restart is needed for new skills to appear!
+Local Skills MCP supports **full hot reload** - skills are discovered dynamically every time the tool list is requested, and skill content is loaded fresh from disk on every use. No server restart is needed for any changes!
 
 ## When to Refresh the Tool List
 
@@ -20,11 +20,11 @@ Local Skills MCP supports **hot reload for NEW skills** - skills are discovered 
 3. User wants to verify a newly created skill appears
 4. Before attempting to use a skill that was just created
 
-**Do NOT need to refresh after**:
+**Skill content changes apply immediately**:
 
-- Modifying existing skill content (cached until server restart)
-- Changing frontmatter description (requires restart to see in tool list)
-- Deleting skills (tool list will update on next refresh anyway)
+- Modifying existing skill content (loaded fresh on next use)
+- Changing frontmatter description (refreshing tool list will show new description)
+- All changes are reflected immediately without restart
 
 ## How Hot Reload Works
 
@@ -42,15 +42,17 @@ This means: **The tool list always reflects the current filesystem state**!
 
 ### What's Cached
 
-- **Skill content**: After a skill is loaded once, its content is cached
-- **Metadata**: Not separately cached (re-read from file)
-- **Discovery**: NOT cached - always fresh
+- **Nothing is cached!** All data is loaded fresh:
+  - Skill content: Read from disk on every `get_skill` call
+  - Metadata: Read from disk on every access
+  - Discovery: Scans filesystem on every tool list request
 
 ### Implications for You (the LLM)
 
 - **After creating a skill**: Request the tool list again to see it
-- **After modifying content**: Tell user restart is needed (content is cached)
+- **After modifying content**: Changes apply immediately on next use!
 - **After adding/removing skills**: Request the tool list to see changes
+- **Full hot reload**: No restarts needed for any changes
 
 ## Refreshing the Tool List
 
@@ -122,11 +124,13 @@ Would you like to try it out?
 ```
 User: Update the code-reviewer skill to be more strict
 
-You: I've updated the code-reviewer skill content in ~/.claude/skills/code-reviewer/SKILL.md
+You: ✅ I've updated the code-reviewer skill content in ~/.claude/skills/code-reviewer/SKILL.md
 
-Note: Since the skill content is cached, you'll need to restart the MCP
-server for the changes to take effect. The server will reload all skills
-on restart with your updated content.
+The changes will take effect immediately! The next time the skill is loaded,
+it will read the updated content from disk. No restart needed thanks to full
+hot reload support.
+
+Would you like me to use the updated skill now to review some code?
 ```
 
 ### Scenario 3: User Asks "Is the Skill Available?"
@@ -163,17 +167,26 @@ async discoverSkills(): Promise<string[]> {
   // Re-scan all directories...
   // Rebuild registry with current filesystem state
 }
+
+async loadSkill(skillName: string): Promise<Skill> {
+  // NO CACHE CHECK - always reads fresh from disk
+  const fileContent = await fs.readFile(skillFilePath, "utf-8");
+  const { metadata, content } = this.parseSkillFile(fileContent);
+  return skill;  // Returns fresh data every time
+}
 ```
 
-This proves: **Skills ARE discovered fresh every time!**
+This proves: **Skills ARE discovered AND loaded fresh every time!**
 
 ## Summary
 
-**Key Message**: Local Skills MCP supports hot reload for NEW skills. They appear immediately - no restart needed!
+**Key Message**: Local Skills MCP supports **full hot reload** for ALL changes. Everything updates immediately - no restart needed!
 
-**Your Role**: After creating skills, be confident they're available and explain the hot reload capability to users. This improves the user experience dramatically compared to requiring restarts.
+**Your Role**: After creating or modifying skills, be confident they're available and explain the hot reload capability to users. This improves the user experience dramatically compared to requiring restarts.
 
 **Remember**:
 
 - New skills: ✅ Hot reload (immediate)
-- Content changes: ❌ Cached (requires restart)
+- Content changes: ✅ Hot reload (immediate)
+- Description changes: ✅ Hot reload (immediate)
+- Deletions: ✅ Hot reload (immediate)

@@ -353,7 +353,7 @@ Content`
   });
 
   describe("loadSkill", () => {
-    it("should load and cache a skill", async () => {
+    it("should load a skill fresh from disk each time", async () => {
       const skillPath = path.join(tempDir, "test-skill");
       await fs.mkdir(skillPath, { recursive: true });
       await fs.writeFile(
@@ -377,9 +377,10 @@ Skill content here`
       expect(skill1.path).toBe(skillPath);
       expect(skill1.source).toBe(tempDir);
 
-      // Second load should use cache
+      // Second load should create a new object with same data (no caching)
       const skill2 = await skillLoader.loadSkill("test-skill");
-      expect(skill2).toBe(skill1); // Same object reference
+      expect(skill2).toStrictEqual(skill1); // Same data, different object
+      expect(skill2).not.toBe(skill1); // Different object references
     });
 
     it("should throw error for non-existent skill", async () => {

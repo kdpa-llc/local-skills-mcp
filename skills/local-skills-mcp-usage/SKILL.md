@@ -331,18 +331,18 @@ Claude will automatically invoke the appropriate skill via the `get_skill` tool.
 **After modifying a skill**:
 
 1. Save changes to SKILL.md
-2. For new skills: **Refresh the tool list** - they appear immediately
-3. For content changes: **Restart MCP server** - skill content is cached and persists until restart
+2. Changes take effect immediately - no restart needed!
+3. Next time the skill is loaded, it will read the updated content from disk
 
 **How Hot Reload Works**:
 
 - **New skills**: Discovered immediately - no restart needed!
   - Skill list refreshes every time tools are requested
   - Add a new skill directory → refresh tool list → skill appears
-- **Modified skills**: Require restart - content is cached
-  - Skill content is cached after first load
-  - Cache persists until server restart
-  - Changing skill content requires restarting the MCP server
+- **Modified skills**: Also work immediately - no restart needed!
+  - Skills are always loaded fresh from disk
+  - Edit a SKILL.md → next `get_skill` call reads the new content
+  - Full hot reload support for all changes
 
 ## Practical Examples
 
