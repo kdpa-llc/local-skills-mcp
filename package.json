@@ -7,6 +7,19 @@
   "bin": {
     "local-skills-mcp": "./dist/index.js"
   },
+  "mcpName": "io.github.kdpa-llc/local-skills-mcp",
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "!dist/**/*.test.js",
+    "!dist/**/*.test.d.ts",
+    "!dist/**/*.spec.js",
+    "!dist/**/*.spec.d.ts",
+    "skills/**/*",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
@@ -41,6 +54,7 @@
     "model-context-protocol",
     "claude",
     "claude-code",
+    "claude-desktop",
     "cline",
     "skills",
     "local",
@@ -51,7 +65,8 @@
     "ai-agent",
     "agent",
     "gpt",
-    "prompt-library"
+    "prompt-library",
+    "prompt-engineering"
   ],
   "author": "KDPA",
   "license": "MIT",

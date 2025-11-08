@@ -1,11 +1,14 @@
 # Source files (users only need dist/)
 src/
 tsconfig.json
+tsconfig.*.json
 *.ts
 !*.d.ts
 
 # Build artifacts
 *.tgz
+coverage/
+*.lcov
 
 # GitHub files
 .github/
@@ -20,10 +23,17 @@ CLAUDE.md
 .vscode/
 .idea/
 
-# Test files if you add them later
+# Test files
 test/
+tests/
 *.test.js
 *.spec.js
+*.test.ts
+*.spec.ts
+dist/*.test.js
+dist/*.test.d.ts
+dist/*.spec.js
+dist/*.spec.d.ts
 
 # Git files
 .git/
@@ -43,3 +53,15 @@ test/
 
 # Temporary files
 .tmp/
+
+# Config files
+.eslintrc.*
+.prettierrc
+.prettierrc.*
+eslint.config.js
+prettier.config.js
+vitest.config.ts
+typedoc.json
+
+# Husky and Git hooks
+.husky/

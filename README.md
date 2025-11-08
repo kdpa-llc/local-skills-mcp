@@ -61,7 +61,13 @@ Transform AI capabilities with structured, expert-level instructions for special
 
 ### Install
 
-**From GitHub (recommended):**
+**From npm (recommended):**
+
+```bash
+npm install -g local-skills-mcp
+```
+
+**Alternative: From GitHub:**
 
 ```bash
 npm install -g github:kdpa-llc/local-skills-mcp
@@ -111,6 +117,7 @@ Add to your MCP client configuration (e.g., `~/.config/claude-code/mcp.json`):
 **For other MCP clients:** Use the same command/args structure according to their MCP server setup.
 
 The server auto-aggregates skills from multiple directories in this priority order (lowest to highest):
+
 1. Package built-in skills (includes self-documenting usage guides)
 2. `~/.claude/skills/` - Your global skills
 3. `./.claude/skills/` - Project-specific skills
@@ -317,6 +324,7 @@ Made with ❤️ by KDPA
 
 <!-- Reference Links -->
 <!-- Badges - Top of README -->
+
 [npm-version-badge]: https://img.shields.io/npm/v/local-skills-mcp.svg
 [npm-package]: https://www.npmjs.com/package/local-skills-mcp
 [license-badge]: https://img.shields.io/badge/License-MIT-yellow.svg
@@ -327,6 +335,7 @@ Made with ❤️ by KDPA
 [mcp-protocol]: https://modelcontextprotocol.io/
 
 <!-- CI/CD Badges -->
+
 [ci-badge]: https://github.com/kdpa-llc/local-skills-mcp/actions/workflows/ci.yml/badge.svg
 [ci-workflow]: https://github.com/kdpa-llc/local-skills-mcp/actions/workflows/ci.yml
 [codecov-badge]: https://codecov.io/gh/kdpa-llc/local-skills-mcp/branch/main/graph/badge.svg
@@ -335,6 +344,7 @@ Made with ❤️ by KDPA
 [codeql-workflow]: https://github.com/kdpa-llc/local-skills-mcp/actions/workflows/codeql.yml
 
 <!-- GitHub Badges -->
+
 [stars-badge]: https://img.shields.io/github/stars/kdpa-llc/local-skills-mcp?style=social
 [stargazers]: https://github.com/kdpa-llc/local-skills-mcp/stargazers
 [forks-badge]: https://img.shields.io/github/forks/kdpa-llc/local-skills-mcp?style=social
@@ -346,10 +356,12 @@ Made with ❤️ by KDPA
 [prs-badge]: https://img.shields.io/badge/PRs-welcome-brightgreen.svg
 
 <!-- Repository Links -->
+
 [repo]: https://github.com/kdpa-llc/local-skills-mcp
 [pulls]: https://github.com/kdpa-llc/local-skills-mcp/pulls
 
 <!-- Documentation Links -->
+
 [contributing]: CONTRIBUTING.md
 [security]: SECURITY.md
 [changelog]: CHANGELOG.md
@@ -357,6 +369,7 @@ Made with ❤️ by KDPA
 [license-file]: LICENSE
 
 <!-- Sponsorship Links -->
+
 [sponsor-github-badge]: https://img.shields.io/badge/Sponsor-GitHub%20Sponsors-ea4aaa?logo=github
 [sponsor-github]: https://github.com/sponsors/moscaverd
 [sponsor-coffee-badge]: https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow?logo=buy-me-a-coffee
@@ -365,5 +378,6 @@ Made with ❤️ by KDPA
 [sponsor-paypal]: https://paypal.me/moscaverd
 
 <!-- External Links -->
+
 [mcp-sdk]: https://github.com/modelcontextprotocol/sdk
 [claude-skills]: https://docs.claude.com/en/docs/claude-code/skills

@@ -1,0 +1,72 @@
+name: Publish to npm and MCP Registry
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # Required for npm trusted publishing with OIDC
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Run tests
+        run: npm test
+
+      - name: Publish to npm (with OIDC trusted publishing)
+        run: npm publish --provenance --access public
+        # No NODE_AUTH_TOKEN needed - uses OIDC for authentication
+        # Provenance attestations are generated automatically
+        # Note: Trusted publishing must be configured on npmjs.com first:
+        # 1. Go to package settings on npmjs.com
+        # 2. Add trusted publisher: kdpa-llc/local-skills-mcp/.github/workflows/publish.yml
+
+      - name: Install MCP Publisher
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz
+          sudo mv mcp-publisher /usr/local/bin/
+          mcp-publisher --version
+
+      - name: Update server.json version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          cat > server.json << EOF
+          {
+            "\$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
+            "name": "io.github.kdpa-llc/local-skills-mcp",
+            "description": "Universal MCP server enabling any LLM or AI agent to utilize expert skills from your local filesystem. Reduces context consumption through lazy loading - only skill names visible initially, full content loads on-demand. Works with Claude, Cline, custom agents, and any MCP-compatible client.",
+            "version": "$VERSION",
+            "packages": [
+              {
+                "registry_type": "npm",
+                "identifier": "local-skills-mcp",
+                "version": "$VERSION"
+              }
+            ]
+          }
+          EOF
+
+      - name: Publish to MCP Registry
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "$GITHUB_TOKEN" | mcp-publisher login github --token-stdin
+          mcp-publisher publish
