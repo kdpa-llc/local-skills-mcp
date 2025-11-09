@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>0.2.1 (2025-11-09)</small>
+
+- fix: resolve symlink issue in entry point detection for npm global installs (#49) ([629ea38](https://github.com/kdpa-llc/local-skills-mcp/commit/629ea38)), closes [#49](https://github.com/kdpa-llc/local-skills-mcp/issues/49) [#48](https://github.com/kdpa-llc/local-skills-mcp/issues/48)
+
 ## 0.2.0 (2025-11-08)
 
 - feat: add code quality tools (ESLint, Prettier, Husky) (#16) ([870a240](https://github.com/kdpa-llc/local-skills-mcp/commit/870a240)), closes [#16](https://github.com/kdpa-llc/local-skills-mcp/issues/16) [#16](https://github.com/kdpa-llc/local-skills-mcp/issues/16)
