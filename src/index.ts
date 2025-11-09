@@ -297,7 +297,10 @@ export class LocalSkillsServer {
 
 // Start the server only if this module is being run directly
 /* istanbul ignore if */
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (
+  import.meta.url === `file://${process.argv[1]}` ||
+  (process.argv[1] && __filename === fs.realpathSync(process.argv[1]))
+) {
   const server = new LocalSkillsServer();
   server.run().catch((error) => {
     console.error("Fatal error running server:", error);

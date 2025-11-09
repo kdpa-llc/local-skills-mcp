@@ -1,13 +1,16 @@
 {
-  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
-  "name": "io.github.kdpa-llc/local-skills-mcp",
-  "description": "Universal MCP server enabling any LLM or AI agent to utilize expert skills from your local filesystem. Reduces context consumption through lazy loading - only skill names visible initially, full content loads on-demand. Works with Claude, Cline, custom agents, and any MCP-compatible client.",
-  "version": "0.1.0",
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json",
+  "name": "io.github.rkdpa/local-skills-mcp",
+  "description": "Universal MCP server for local filesystem skills with lazy loading and context-efficient discovery",
+  "version": "0.2.1",
   "packages": [
     {
-      "registry_type": "npm",
+      "registryType": "npm",
       "identifier": "local-skills-mcp",
-      "version": "0.1.0"
+      "version": "0.2.1",
+      "transport": {
+        "type": "stdio"
+      }
     }
   ]
 }

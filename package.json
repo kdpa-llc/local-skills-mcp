@@ -7,7 +7,7 @@
   "bin": {
     "local-skills-mcp": "dist/index.js"
   },
-  "mcpName": "io.github.kdpa-llc/local-skills-mcp",
+  "mcpName": "io.github.rkdpa/local-skills-mcp",
   "files": [
     "dist/**/*.js",
     "dist/**/*.d.ts",
