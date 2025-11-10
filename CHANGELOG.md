@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 0.3.0 (2025-11-10)
+
+- feat: automate version syncing with generated server.json ([ad12154](https://github.com/kdpa-llc/local-skills-mcp/commit/ad12154))
+
 ## <small>0.2.2 (2025-11-10)</small>
 
 - fix: trigger 0.2.2 release ([cce30a5](https://github.com/kdpa-llc/local-skills-mcp/commit/cce30a5))
