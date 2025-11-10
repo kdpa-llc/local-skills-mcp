@@ -161,7 +161,23 @@ export class LocalSkillsServer {
 
       // Package built-in skills ensure there are always skills available
       if (skillNames.length > 0) {
-        getSkillDescription += `\n\nAvailable skills: ${skillNames.join(", ")}`;
+        // Fetch metadata for each skill to get descriptions
+        const skillsWithDescriptions: string[] = [];
+        for (const skillName of skillNames) {
+          try {
+            const metadata = await this.skillLoader.getSkillMetadata(skillName);
+            // Truncate description if too long (max 100 chars)
+            let description = metadata.description;
+            if (description.length > 100) {
+              description = description.substring(0, 97) + "...";
+            }
+            skillsWithDescriptions.push(`- ${skillName}: ${description}`);
+          } catch {
+            // If metadata fails to load, just show the skill name
+            skillsWithDescriptions.push(`- ${skillName}`);
+          }
+        }
+        getSkillDescription += `\n\nAvailable skills:\n${skillsWithDescriptions.join("\n")}`;
       }
 
       const tools: Tool[] = [
