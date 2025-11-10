@@ -501,7 +501,7 @@ description: What this skill does
 3. **Naming Conventions:**
    - Use kebab-case for directory names: `code-reviewer`, `test-generator`
    - Use Title Case for skill names in frontmatter: "Code Reviewer"
-   - Keep descriptions concise (< 100 characters)
+   - Keep descriptions concise (< 200 characters)
 
 ### Performance Optimization
 
