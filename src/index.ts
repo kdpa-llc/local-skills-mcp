@@ -166,10 +166,10 @@ export class LocalSkillsServer {
         for (const skillName of skillNames) {
           try {
             const metadata = await this.skillLoader.getSkillMetadata(skillName);
-            // Truncate description if too long (max 100 chars)
+            // Truncate description if too long (max 200 chars)
             let description = metadata.description;
-            if (description.length > 100) {
-              description = description.substring(0, 97) + "...";
+            if (description.length > 200) {
+              description = description.substring(0, 197) + "...";
             }
             skillsWithDescriptions.push(`- ${skillName}: ${description}`);
           } catch {
