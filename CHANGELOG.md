@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>0.2.2 (2025-11-10)</small>
+
+- fix: trigger 0.2.2 release ([cce30a5](https://github.com/kdpa-llc/local-skills-mcp/commit/cce30a5))
+- chore: bump version to 0.2.2 ([1e26933](https://github.com/kdpa-llc/local-skills-mcp/commit/1e26933))
+
 ## <small>0.2.1 (2025-11-09)</small>
 
 - fix: resolve symlink issue in entry point detection for npm global installs (#49) ([629ea38](https://github.com/kdpa-llc/local-skills-mcp/commit/629ea38)), closes [#49](https://github.com/kdpa-llc/local-skills-mcp/issues/49) [#48](https://github.com/kdpa-llc/local-skills-mcp/issues/48)
