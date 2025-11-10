@@ -53,7 +53,11 @@
             { "type": "refactor", "section": "Code Refactoring" },
             { "type": "test", "section": "Tests", "hidden": true },
             { "type": "build", "section": "Build System" },
-            { "type": "ci", "section": "Continuous Integration", "hidden": true },
+            {
+              "type": "ci",
+              "section": "Continuous Integration",
+              "hidden": true
+            },
             { "type": "chore", "section": "Chores", "hidden": true }
           ]
         }
@@ -67,6 +71,12 @@
       }
     ],
     "@semantic-release/npm",
+    [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "node scripts/generate-server-json.js"
+      }
+    ],
     [
       "@semantic-release/github",
       {

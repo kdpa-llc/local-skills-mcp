@@ -42,3 +42,6 @@ docs/api/
 
 # AI development files
 CLAUDE.md
+
+# Generated files
+server.json
