@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 0.4.0 (2025-11-10)
+
+- feat: add skill descriptions to ListTools output ([2451bcb](https://github.com/kdpa-llc/local-skills-mcp/commit/2451bcb)), closes [#50](https://github.com/kdpa-llc/local-skills-mcp/issues/50)
+
 ## 0.3.0 (2025-11-10)
 
 - feat: automate version syncing with generated server.json ([ad12154](https://github.com/kdpa-llc/local-skills-mcp/commit/ad12154))
