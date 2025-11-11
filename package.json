@@ -1,6 +1,6 @@
 {
   "name": "local-skills-mcp",
-  "version": "0.4.0",
+  "version": "0.4.2",
   "description": "Universal MCP server enabling any LLM or AI agent to utilize expert skills from your local filesystem. Reduces context consumption through lazy loading - only skill names visible initially, full content loads on-demand. Works with Claude, Cline, custom agents, and any MCP-compatible client.",
   "type": "module",
   "main": "dist/index.js",
