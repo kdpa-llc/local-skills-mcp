@@ -5,6 +5,8 @@
 **Enable any LLM or AI agent to utilize expert skills from your local filesystem via MCP**
 
 [![npm version][npm-version-badge]][npm-package]
+[![npm downloads][npm-downloads-badge]][npm-package]
+[![npm types][npm-types-badge]][npm-package]
 [![License: MIT][license-badge]][license]
 [![Node][node-badge]][nodejs]
 [![MCP][mcp-badge]][mcp-protocol]
@@ -53,6 +55,7 @@ Transform AI capabilities with structured, expert-level instructions for special
 - **🌐 Universal** - Works with any MCP client (Claude Code, Desktop, Cline, Continue.dev, custom agents)
 - **🔄 Portable** - Write once, use across multiple AI systems and LLMs (Claude, GPT, Gemini, local models)
 - **⚡ Context Efficient** - Lazy loading: only skill names/descriptions load initially (~50 tokens/skill), full content on-demand
+- **🔥 Hot Reload** - All changes apply instantly (new skills, edits, deletions) without restart
 - **🎯 Multi-Source** - Auto-aggregates from package built-in skills, `~/.claude/skills`, `./.claude/skills`, `./skills`, and custom paths
 - **📦 Zero Config** - Works out-of-the-box with standard skill locations
 - **✨ Ultra Simple** - Single tool (`get_skill`) with dynamic skill discovery
@@ -128,6 +131,26 @@ Later directories override earlier ones, allowing you to customize built-in skil
 
 ### Create & Use Skills
 
+**Option 1: Ask Claude to Create Skills (Recommended)**
+
+After installing Local Skills MCP, you can ask Claude to create skills for you:
+
+```
+You: "Create a Python expert skill that helps me write clean, idiomatic Python code"
+Claude: [Creates ~/.claude/skills/python-expert/SKILL.md with appropriate content]
+        ✅ Created python-expert skill! It's immediately available thanks to hot reload.
+```
+
+```
+You: "Make a skill for reviewing pull requests focusing on security and best practices"
+Claude: [Creates the skill with detailed PR review instructions]
+        ✅ The pr-reviewer skill is ready to use right away!
+```
+
+Claude will use the built-in `skill-creator` skill to generate well-structured skills with proper YAML frontmatter, trigger keywords, and best practices.
+
+**Option 2: Create Manually**
+
 Create `~/.claude/skills/my-skill/SKILL.md`:
 
 ```markdown
@@ -145,9 +168,11 @@ Guidelines:
 3. Be helpful
 ```
 
-Then request it in your AI client: `"Use the my-skill skill"`
+**Using Skills:**
 
-The AI auto-discovers available skills and loads them on-demand.
+Request any skill in your AI client: `"Use the my-skill skill"`
+
+The AI auto-discovers available skills and loads them on-demand. **All changes apply instantly** thanks to hot reload—no restart needed!
 
 ## 📝 SKILL.md Format
 
@@ -187,7 +212,10 @@ Claude uses language understanding to decide when to invoke skills—specific tr
 2. When you request a skill, AI invokes `get_skill`
 3. Full skill content loads with detailed instructions
 
-**Built-in Skills:** The package includes self-documenting skills that explain how to use Local Skills MCP and create new skills. These are available immediately after installation.
+**Built-in Skills:** The package includes three self-documenting skills that explain how to use Local Skills MCP and create new skills. These are available immediately after installation:
+- `local-skills-mcp-usage` - Quick usage guide
+- `local-skills-mcp-guide` - Comprehensive documentation
+- `skill-creator` - Skill authoring best practices
 
 **Skill Aggregation:** Auto-aggregates from package built-in skills, `~/.claude/skills/`, `./.claude/skills/`, `./skills`, and `$SKILLS_DIR` (if set). Later directories override duplicates.
 
@@ -233,41 +261,65 @@ Provide specific, actionable feedback.
 
 ## ❓ FAQ
 
-**Q: What MCP clients are supported?**
-A: Any MCP-compatible client: Claude Code, Claude Desktop, Cline, Continue.dev, or custom agents.
+<details>
+<summary><strong>Q: What MCP clients are supported?</strong></summary>
+<p>Any MCP-compatible client: Claude Code, Claude Desktop, Cline, Continue.dev, or custom agents.</p>
+</details>
 
-**Q: How is this different from Claude's built-in skills?**
-A: Works with any MCP client (not just Claude), aggregates from multiple directories, explicit invocation control, and better context efficiency via lazy loading.
+<details>
+<summary><strong>Q: How is this different from Claude's built-in skills?</strong></summary>
+<p>Works with any MCP client (not just Claude), aggregates from multiple directories, explicit invocation control, and better context efficiency via lazy loading.</p>
+</details>
 
-**Q: Can I use existing Claude skills?**
-A: Yes! Auto-aggregates from `~/.claude/skills/` along with other directories.
+<details>
+<summary><strong>Q: Can I use existing Claude skills?</strong></summary>
+<p>Yes! Auto-aggregates from <code>~/.claude/skills/</code> along with other directories.</p>
+</details>
 
-**Q: Do I need to restart after adding skills?**
-A: Yes, currently requires restart. Hot reloading planned for future releases.
+<details>
+<summary><strong>Q: Do I need to restart after adding skills?</strong></summary>
+<p>No! Full hot reload is supported. All changes (new skills, content edits, deletions) apply immediately without restart. Skills are discovered dynamically on every tool list request.</p>
+</details>
 
-**Q: How much context does this consume?**
-A: Minimal! Only names/descriptions initially (~50 tokens/skill). Full content loads on-demand, preserving 95%+ of context.
+<details>
+<summary><strong>Q: How much context does this consume?</strong></summary>
+<p>Minimal! Only names/descriptions initially (~50 tokens/skill). Full content loads on-demand, preserving 95%+ of context.</p>
+</details>
 
-**Q: Can I use multiple skill directories?**
-A: Yes! Auto-aggregates from package built-in skills, `~/.claude/skills/`, `./.claude/skills/`, `./skills`, and `$SKILLS_DIR`.
+<details>
+<summary><strong>Q: Can I use multiple skill directories?</strong></summary>
+<p>Yes! Auto-aggregates from package built-in skills, <code>~/.claude/skills/</code>, <code>./.claude/skills/</code>, <code>./skills</code>, and <code>$SKILLS_DIR</code>.</p>
+</details>
 
-**Q: What if I have duplicate skill names?**
-A: Later directories override earlier ones: package built-in → `~/.claude/skills` → `./.claude/skills` → `./skills` → `$SKILLS_DIR`. This lets you customize built-in skills.
+<details>
+<summary><strong>Q: What if I have duplicate skill names?</strong></summary>
+<p>Later directories override earlier ones: package built-in → <code>~/.claude/skills</code> → <code>./.claude/skills</code> → <code>./skills</code> → <code>$SKILLS_DIR</code>. This lets you customize built-in skills.</p>
+</details>
 
-**Q: What built-in skills are included?**
-A: The package includes three self-documenting skills: `local-skills-mcp-usage` (usage guide), `local-skills-mcp-guide` (comprehensive documentation), and `skill-creator` (skill authoring guide). These are available immediately after installation.
+<details>
+<summary><strong>Q: What built-in skills are included?</strong></summary>
+<p>The package includes three self-documenting skills: <code>local-skills-mcp-usage</code> (quick usage guide), <code>local-skills-mcp-guide</code> (comprehensive documentation), and <code>skill-creator</code> (skill authoring guide). These are available immediately after installation.</p>
+</details>
 
-**Q: Works with local LLMs (Ollama, LM Studio)?**
-A: Yes! Works with any MCP-compatible LLM setup. Skills are structured prompts that work with any model.
+<details>
+<summary><strong>Q: Works with local LLMs (Ollama, LM Studio)?</strong></summary>
+<p>Yes! Works with any MCP-compatible LLM setup. Skills are structured prompts that work with any model.</p>
+</details>
 
-**Q: Works offline?**
-A: Yes! Runs entirely on local filesystem (though your LLM may need internet depending on the model).
+<details>
+<summary><strong>Q: Works offline?</strong></summary>
+<p>Yes! Runs entirely on local filesystem (though your LLM may need internet depending on the model).</p>
+</details>
 
-**Q: How to create a good skill?**
-A: Follow [SKILL.md format](#-skillmd-format). Use clear descriptions with trigger keywords, specific instructions, and examples.
+<details>
+<summary><strong>Q: How to create a good skill?</strong></summary>
+<p>Follow <a href="#-skillmd-format">SKILL.md format</a>. Use clear descriptions with trigger keywords, specific instructions, and examples.</p>
+</details>
 
-**Q: Where can I get help?**
-A: Open an [issue on GitHub][repo-issues].
+<details>
+<summary><strong>Q: Where can I get help?</strong></summary>
+<p>Open an <a href="https://github.com/kdpa-llc/local-skills-mcp/issues">issue on GitHub</a>.</p>
+</details>
 
 **More:** See [CONTRIBUTING.md][contributing], [SECURITY.md][security], [CHANGELOG.md][changelog]
 
@@ -299,10 +351,10 @@ If you find Local Skills MCP useful, please consider supporting its development!
 
 **Ways to support:**
 
-- ⭐ Star this repository
+- ⭐ [Star this repository][stargazers]
 - 💰 Sponsor via the badges above
-- 🐛 Report bugs and suggest features
-- 📝 Contribute code or documentation
+- 🐛 [Report bugs and suggest features][repo-issues]
+- 📝 [Contribute code or documentation][contributing]
 
 ## 📄 License
 
@@ -327,6 +379,8 @@ Made with ❤️ by KDPA
 
 [npm-version-badge]: https://img.shields.io/npm/v/local-skills-mcp.svg
 [npm-package]: https://www.npmjs.com/package/local-skills-mcp
+[npm-downloads-badge]: https://img.shields.io/npm/dm/local-skills-mcp
+[npm-types-badge]: https://img.shields.io/npm/types/local-skills-mcp
 [license-badge]: https://img.shields.io/badge/License-MIT-yellow.svg
 [license]: https://opensource.org/licenses/MIT
 [node-badge]: https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg

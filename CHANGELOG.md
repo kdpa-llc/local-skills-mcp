@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>0.4.2 (2025-11-11)</small>
+
+- docs: add npm downloads and types badges to README ([110c285](https://github.com/kdpa-llc/local-skills-mcp/commit/110c285))
+- docs: improve README with collapsible FAQ and enhanced support links ([8daffb5](https://github.com/kdpa-llc/local-skills-mcp/commit/8daffb5))
+- docs: update README with hot reload support and interactive skill creation examples ([6300cfc](https://github.com/kdpa-llc/local-skills-mcp/commit/6300cfc))
+- refactor: remove skill-refresh-helper from built-in skills ([c003f38](https://github.com/kdpa-llc/local-skills-mcp/commit/c003f38))
+
 ## 0.4.0 (2025-11-10)
 
 - feat: add skill descriptions to ListTools output ([2451bcb](https://github.com/kdpa-llc/local-skills-mcp/commit/2451bcb)), closes [#50](https://github.com/kdpa-llc/local-skills-mcp/issues/50)
