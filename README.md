@@ -210,11 +210,10 @@ Claude uses language understanding to decide when to invoke skills—specific tr
 2. When you request a skill, AI invokes `get_skill`
 3. Full skill content loads with detailed instructions
 
-**Built-in Skills:** The package includes four self-documenting skills that explain how to use Local Skills MCP, create new skills, and understand hot reload capabilities. These are available immediately after installation:
+**Built-in Skills:** The package includes three self-documenting skills that explain how to use Local Skills MCP and create new skills. These are available immediately after installation:
 - `local-skills-mcp-usage` - Quick usage guide
 - `local-skills-mcp-guide` - Comprehensive documentation
 - `skill-creator` - Skill authoring best practices
-- `skill-refresh-helper` - Hot reload capabilities guide
 
 **Skill Aggregation:** Auto-aggregates from package built-in skills, `~/.claude/skills/`, `./.claude/skills/`, `./skills`, and `$SKILLS_DIR` (if set). Later directories override duplicates.
 
@@ -282,7 +281,7 @@ A: Yes! Auto-aggregates from package built-in skills, `~/.claude/skills/`, `./.c
 A: Later directories override earlier ones: package built-in → `~/.claude/skills` → `./.claude/skills` → `./skills` → `$SKILLS_DIR`. This lets you customize built-in skills.
 
 **Q: What built-in skills are included?**
-A: The package includes four self-documenting skills: `local-skills-mcp-usage` (quick usage guide), `local-skills-mcp-guide` (comprehensive documentation), `skill-creator` (skill authoring guide), and `skill-refresh-helper` (hot reload capabilities guide). These are available immediately after installation.
+A: The package includes three self-documenting skills: `local-skills-mcp-usage` (quick usage guide), `local-skills-mcp-guide` (comprehensive documentation), and `skill-creator` (skill authoring guide). These are available immediately after installation.
 
 **Q: Works with local LLMs (Ollama, LM Studio)?**
 A: Yes! Works with any MCP-compatible LLM setup. Skills are structured prompts that work with any model.
