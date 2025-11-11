@@ -53,6 +53,7 @@ Transform AI capabilities with structured, expert-level instructions for special
 - **🌐 Universal** - Works with any MCP client (Claude Code, Desktop, Cline, Continue.dev, custom agents)
 - **🔄 Portable** - Write once, use across multiple AI systems and LLMs (Claude, GPT, Gemini, local models)
 - **⚡ Context Efficient** - Lazy loading: only skill names/descriptions load initially (~50 tokens/skill), full content on-demand
+- **🔥 Hot Reload** - All changes apply instantly (new skills, edits, deletions) without restart
 - **🎯 Multi-Source** - Auto-aggregates from package built-in skills, `~/.claude/skills`, `./.claude/skills`, `./skills`, and custom paths
 - **📦 Zero Config** - Works out-of-the-box with standard skill locations
 - **✨ Ultra Simple** - Single tool (`get_skill`) with dynamic skill discovery
@@ -128,6 +129,26 @@ Later directories override earlier ones, allowing you to customize built-in skil
 
 ### Create & Use Skills
 
+**Option 1: Ask Claude to Create Skills (Recommended)**
+
+After installing Local Skills MCP, you can ask Claude to create skills for you:
+
+```
+You: "Create a Python expert skill that helps me write clean, idiomatic Python code"
+Claude: [Creates ~/.claude/skills/python-expert/SKILL.md with appropriate content]
+        ✅ Created python-expert skill! It's immediately available thanks to hot reload.
+```
+
+```
+You: "Make a skill for reviewing pull requests focusing on security and best practices"
+Claude: [Creates the skill with detailed PR review instructions]
+        ✅ The pr-reviewer skill is ready to use right away!
+```
+
+Claude will use the built-in `skill-creator` skill to generate well-structured skills with proper YAML frontmatter, trigger keywords, and best practices.
+
+**Option 2: Create Manually**
+
 Create `~/.claude/skills/my-skill/SKILL.md`:
 
 ```markdown
@@ -145,9 +166,11 @@ Guidelines:
 3. Be helpful
 ```
 
-Then request it in your AI client: `"Use the my-skill skill"`
+**Using Skills:**
 
-The AI auto-discovers available skills and loads them on-demand.
+Request any skill in your AI client: `"Use the my-skill skill"`
+
+The AI auto-discovers available skills and loads them on-demand. **All changes apply instantly** thanks to hot reload—no restart needed!
 
 ## 📝 SKILL.md Format
 
@@ -187,7 +210,11 @@ Claude uses language understanding to decide when to invoke skills—specific tr
 2. When you request a skill, AI invokes `get_skill`
 3. Full skill content loads with detailed instructions
 
-**Built-in Skills:** The package includes self-documenting skills that explain how to use Local Skills MCP and create new skills. These are available immediately after installation.
+**Built-in Skills:** The package includes four self-documenting skills that explain how to use Local Skills MCP, create new skills, and understand hot reload capabilities. These are available immediately after installation:
+- `local-skills-mcp-usage` - Quick usage guide
+- `local-skills-mcp-guide` - Comprehensive documentation
+- `skill-creator` - Skill authoring best practices
+- `skill-refresh-helper` - Hot reload capabilities guide
 
 **Skill Aggregation:** Auto-aggregates from package built-in skills, `~/.claude/skills/`, `./.claude/skills/`, `./skills`, and `$SKILLS_DIR` (if set). Later directories override duplicates.
 
@@ -243,7 +270,7 @@ A: Works with any MCP client (not just Claude), aggregates from multiple directo
 A: Yes! Auto-aggregates from `~/.claude/skills/` along with other directories.
 
 **Q: Do I need to restart after adding skills?**
-A: Yes, currently requires restart. Hot reloading planned for future releases.
+A: No! Full hot reload is supported. All changes (new skills, content edits, deletions) apply immediately without restart. Skills are discovered dynamically on every tool list request.
 
 **Q: How much context does this consume?**
 A: Minimal! Only names/descriptions initially (~50 tokens/skill). Full content loads on-demand, preserving 95%+ of context.
@@ -255,7 +282,7 @@ A: Yes! Auto-aggregates from package built-in skills, `~/.claude/skills/`, `./.c
 A: Later directories override earlier ones: package built-in → `~/.claude/skills` → `./.claude/skills` → `./skills` → `$SKILLS_DIR`. This lets you customize built-in skills.
 
 **Q: What built-in skills are included?**
-A: The package includes three self-documenting skills: `local-skills-mcp-usage` (usage guide), `local-skills-mcp-guide` (comprehensive documentation), and `skill-creator` (skill authoring guide). These are available immediately after installation.
+A: The package includes four self-documenting skills: `local-skills-mcp-usage` (quick usage guide), `local-skills-mcp-guide` (comprehensive documentation), `skill-creator` (skill authoring guide), and `skill-refresh-helper` (hot reload capabilities guide). These are available immediately after installation.
 
 **Q: Works with local LLMs (Ollama, LM Studio)?**
 A: Yes! Works with any MCP-compatible LLM setup. Skills are structured prompts that work with any model.
