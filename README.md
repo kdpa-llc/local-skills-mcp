@@ -5,6 +5,8 @@
 **Enable any LLM or AI agent to utilize expert skills from your local filesystem via MCP**
 
 [![npm version][npm-version-badge]][npm-package]
+[![npm downloads][npm-downloads-badge]][npm-package]
+[![npm types][npm-types-badge]][npm-package]
 [![License: MIT][license-badge]][license]
 [![Node][node-badge]][nodejs]
 [![MCP][mcp-badge]][mcp-protocol]
@@ -353,6 +355,8 @@ Made with ❤️ by KDPA
 
 [npm-version-badge]: https://img.shields.io/npm/v/local-skills-mcp.svg
 [npm-package]: https://www.npmjs.com/package/local-skills-mcp
+[npm-downloads-badge]: https://img.shields.io/npm/dm/local-skills-mcp
+[npm-types-badge]: https://img.shields.io/npm/types/local-skills-mcp
 [license-badge]: https://img.shields.io/badge/License-MIT-yellow.svg
 [license]: https://opensource.org/licenses/MIT
 [node-badge]: https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg
