@@ -337,6 +337,28 @@ Quick start:
 
 Note: This project follows a [Code of Conduct][code-of-conduct].
 
+## 🔗 Complementary Projects
+
+**Optimize your MCP setup with these complementary tools:**
+
+### [MCP Tool Aggregator][mcp-tool-aggregator]
+
+**Aggregate and compress tool descriptions from multiple MCP servers**
+
+While Local Skills MCP provides expert prompt instructions, [MCP Tool Aggregator][mcp-tool-aggregator] optimizes your tool descriptions with intelligent LLM-based compression.
+
+**Perfect combination:**
+- **Local Skills MCP** - Expert skills with lazy loading (~50 tokens/skill)
+- **MCP Tool Aggregator** - Compressed tool descriptions (50-80% token reduction)
+
+**Together they enable:**
+- 🎯 Maximum context efficiency across skills AND tools
+- 🔗 Access to multiple MCP servers through one connection
+- ⚡ Minimal token consumption for large-scale workflows
+- 🚀 Professional AI agent setups with hundreds of tools
+
+[Learn more about MCP Tool Aggregator →][mcp-tool-aggregator]
+
 ## 💖 Support This Project
 
 If you find Local Skills MCP useful, please consider supporting its development!
@@ -435,3 +457,4 @@ Made with ❤️ by KDPA
 
 [mcp-sdk]: https://github.com/modelcontextprotocol/sdk
 [claude-skills]: https://docs.claude.com/en/docs/claude-code/skills
+[mcp-tool-aggregator]: https://github.com/kdpa-llc/mcp-compression-proxy
