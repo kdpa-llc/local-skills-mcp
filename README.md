@@ -341,15 +341,15 @@ Note: This project follows a [Code of Conduct][code-of-conduct].
 
 **Optimize your MCP setup with these complementary tools:**
 
-### [MCP Tool Aggregator][mcp-tool-aggregator]
+### [MCP Compression Proxy][mcp-tool-aggregator]
 
 **Aggregate and compress tool descriptions from multiple MCP servers**
 
-While Local Skills MCP provides expert prompt instructions, [MCP Tool Aggregator][mcp-tool-aggregator] optimizes your tool descriptions with intelligent LLM-based compression.
+While Local Skills MCP provides expert prompt instructions, [MCP Compression Proxy][mcp-tool-aggregator] optimizes your tool descriptions with intelligent LLM-based compression.
 
 **Perfect combination:**
 - **Local Skills MCP** - Expert skills with lazy loading (~50 tokens/skill)
-- **MCP Tool Aggregator** - Compressed tool descriptions (50-80% token reduction)
+- **MCP Compression Proxy** - Compressed tool descriptions (50-80% token reduction)
 
 **Together they enable:**
 - 🎯 Maximum context efficiency across skills AND tools
@@ -357,7 +357,7 @@ While Local Skills MCP provides expert prompt instructions, [MCP Tool Aggregator
 - ⚡ Minimal token consumption for large-scale workflows
 - 🚀 Professional AI agent setups with hundreds of tools
 
-[Learn more about MCP Tool Aggregator →][mcp-tool-aggregator]
+[Learn more about MCP Compression Proxy →][mcp-tool-aggregator]
 
 ## 💖 Support This Project
 
