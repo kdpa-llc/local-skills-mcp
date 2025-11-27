@@ -23,6 +23,7 @@ Your skill instructions in Markdown format...
 ## Required Fields
 
 ### 1. name (Required)
+
 - **Format**: lowercase, hyphens for spaces, max 64 characters
 - **Examples**: `code-reviewer`, `api-designer`, `sql-optimizer`
 - **Rules**:
@@ -31,6 +32,7 @@ Your skill instructions in Markdown format...
   - Reflect the skill's primary purpose
 
 ### 2. description (Required)
+
 - **Length**: Maximum 200 characters
 - **Critical**: This determines when Claude selects your skill
 - **Pattern**: `[What it does]. Use when [trigger conditions/keywords].`
@@ -42,6 +44,7 @@ Based on **Anthropic's Claude Skills best practices**, descriptions should help 
 ### Best Practices
 
 ✅ **DO:**
+
 - Be specific about capabilities and outcomes
 - Include trigger keywords users would naturally mention
 - Use problem-solution framing
@@ -49,6 +52,7 @@ Based on **Anthropic's Claude Skills best practices**, descriptions should help 
 - Focus on WHEN to use the skill
 
 ❌ **DON'T:**
+
 - Use vague descriptions like "helps with coding"
 - Omit trigger keywords
 - Make it too generic
@@ -57,11 +61,13 @@ Based on **Anthropic's Claude Skills best practices**, descriptions should help 
 ### Description Examples
 
 **Good Examples:**
+
 - ✅ "Reviews code for best practices, potential bugs, and security issues. Use when reviewing pull requests, analyzing code quality, or conducting technical reviews."
 - ✅ "Generates comprehensive unit tests with edge cases and mocking. Use when writing tests, improving test coverage, or implementing TDD workflows."
 - ✅ "Creates SQL queries with optimization and indexing strategies. Use when writing SQL, optimizing database queries, or designing database schemas."
 
 **Poor Examples:**
+
 - ❌ "Helps with code reviews" (too vague, no trigger keywords)
 - ❌ "A testing expert" (doesn't explain what it does or when to use)
 - ❌ "General programming assistant" (too generic, no specific use case)
@@ -69,40 +75,54 @@ Based on **Anthropic's Claude Skills best practices**, descriptions should help 
 ## Skill Content Best Practices
 
 ### 1. Clear Role Definition
+
 Start by defining the expert role:
+
 ```markdown
 You are an expert [domain] specialist with deep knowledge of [specifics].
 ```
 
 ### 2. Specific Task Instructions
+
 Be explicit about what the AI should do:
+
 ```markdown
 Your task is to [specific task].
 ```
 
 ### 3. Structured Guidelines
+
 Use numbered or bulleted lists for clarity:
+
 ```markdown
 Please analyze the code for:
+
 1. **Correctness**: Does the code work as intended?
 2. **Best Practices**: Does it follow conventions?
 3. **Performance**: Are there efficiency issues?
 ```
 
 ### 4. Examples (Optional but Recommended)
+
 Include examples when helpful:
+
 ```markdown
 Example good commit message:
+
 - "Fix authentication bug in user login flow"
 
 Example poor commit message:
+
 - "Updated files"
 ```
 
 ### 5. Output Format (When Relevant)
+
 Specify how you want results formatted:
+
 ```markdown
 Provide your review in this format:
+
 - **Summary**: Overall assessment
 - **Issues Found**: List of problems
 - **Recommendations**: Suggested improvements
@@ -111,6 +131,7 @@ Provide your review in this format:
 ## File Structure
 
 ### Directory Layout
+
 ```
 ~/.claude/skills/          # Personal skills (recommended)
 ├── my-skill/
@@ -121,6 +142,7 @@ Provide your review in this format:
 ```
 
 Or project-local:
+
 ```
 ./skills/                  # Project/repo skills
 ├── my-skill/
@@ -194,8 +216,8 @@ You are an expert at writing clear, conventional commit messages.
 Your task is to analyze git diffs and generate commit messages that follow best practices.
 
 ## Commit Message Format
-
 ```
+
 <type>: <subject>
 
 <body>
@@ -222,6 +244,7 @@ Your task is to analyze git diffs and generate commit messages that follow best 
 ## Examples
 
 Good:
+
 ```
 feat: Add user authentication via JWT
 
@@ -232,9 +255,12 @@ Closes #123
 ```
 
 Poor:
+
 ```
 updated files
 ```
+
 ```
 
 When helping users create skills, guide them through the format, ask clarifying questions about their needs, and help them write effective descriptions with proper trigger keywords.
+```
