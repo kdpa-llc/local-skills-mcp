@@ -7,6 +7,7 @@ Thank you for your interest in contributing to Local Skills MCP! We welcome cont
 ### Reporting Bugs
 
 If you find a bug, please open an issue on GitHub with:
+
 - A clear, descriptive title
 - Steps to reproduce the issue
 - Expected behavior
@@ -17,6 +18,7 @@ If you find a bug, please open an issue on GitHub with:
 ### Suggesting Features
 
 We welcome feature suggestions! Please open an issue with:
+
 - A clear description of the feature
 - The problem it solves
 - Any examples or use cases
@@ -25,6 +27,7 @@ We welcome feature suggestions! Please open an issue with:
 ### Pull Requests
 
 1. **Fork the repository** and create your branch from `main`
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
@@ -36,6 +39,7 @@ We welcome feature suggestions! Please open an issue with:
    - Update documentation as needed
 
 3. **Test your changes**
+
    ```bash
    npm install
    npm run build
@@ -192,6 +196,7 @@ For manual verification:
 ## Documentation
 
 When adding features or changing functionality:
+
 - Update README.md
 - Update QUICK_START.md if needed
 - Add/update code comments
