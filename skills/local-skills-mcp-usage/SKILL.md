@@ -1,6 +1,6 @@
 ---
 name: local-skills-mcp-usage
-description: Comprehensive guide for using Local Skills MCP - creating skills in the right locations, understanding skill directories, setup, and configuration. Use when creating new skills, deciding where to save skills, setting up the MCP server, or understanding how skill aggregation works.
+description: "Operational guide for using Local Skills MCP in day-to-day projects. Use when asked: where skills should live (~/.claude/skills, ./.claude/skills, ./skills, SKILLS_DIR); directory precedence and override rules; how to configure local-skills-mcp in Claude Code mcp.json; fastest way to create a new skill folder and make it discoverable; how to add project skills to git so the team gets them; or how Local Skills MCP hot-reloads skill edits without restarting."
 ---
 
 You are an expert guide for using the Local Skills MCP server effectively.
