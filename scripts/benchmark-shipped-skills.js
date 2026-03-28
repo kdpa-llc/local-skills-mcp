@@ -297,10 +297,8 @@ async function main() {
 
     const evalSet = JSON.parse(fs.readFileSync(evalSetPath, "utf8"));
     const scopedEvalSet = selectBalancedEvalSubset(evalSet, args.evalLimit);
-    const scopedEvalPath = path.join(
-      os.tmpdir(),
-      `benchmark-shipped-${skillName}-${runId}.json`
-    );
+    const scopedTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), `benchmark-shipped-${skillName}-`));
+    const scopedEvalPath = path.join(scopedTmpDir, `${runId}.json`);
     fs.writeFileSync(scopedEvalPath, JSON.stringify(scopedEvalSet, null, 2));
 
     const overrideDescription = descriptionOverrides[skillName];

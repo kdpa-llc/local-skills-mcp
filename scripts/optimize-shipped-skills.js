@@ -304,10 +304,8 @@ async function main() {
 
     const fullEvalSet = JSON.parse(fs.readFileSync(evalSetPath, "utf8"));
     const scopedEvalSet = selectBalancedEvalSubset(fullEvalSet, args.evalLimit);
-    const scopedEvalPath = path.join(
-      os.tmpdir(),
-      `optimize-skills-${skillName}-${runId}.json`
-    );
+    const scopedTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), `optimize-skills-${skillName}-`));
+    const scopedEvalPath = path.join(scopedTmpDir, `${runId}.json`);
     fs.writeFileSync(scopedEvalPath, JSON.stringify(scopedEvalSet, null, 2));
 
     const baselineDescription = getDescriptionFromSkillFile(skillFilePath);

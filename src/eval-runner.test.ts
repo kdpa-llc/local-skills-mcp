@@ -16,6 +16,11 @@ import fs from "fs";
 import { spawnSync, spawn } from "child_process";
 import { checkEvaluatePrerequisites, evaluateSkill } from "./eval-runner.js";
 
+/** Normalize path separators to forward slashes for cross-platform matching */
+function norm(p: string): string {
+  return p.replace(/\\/g, "/");
+}
+
 describe("eval-runner", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -47,7 +52,7 @@ describe("eval-runner", () => {
       .mockReturnValueOnce({ status: 0 } as any);
 
     vi.mocked(fs.existsSync).mockImplementation((target: any) =>
-      String(target).endsWith(
+      norm(String(target)).endsWith(
         "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
       )
     );
@@ -73,7 +78,7 @@ describe("eval-runner", () => {
       .mockReturnValueOnce({ status: 0 } as any);
 
     vi.mocked(fs.existsSync).mockImplementation((target: any) =>
-      String(target).endsWith("vendor/anthropic-skills/run_loop.py")
+      norm(String(target)).endsWith("vendor/anthropic-skills/run_loop.py")
     );
 
     const result = checkEvaluatePrerequisites("/repo");
@@ -88,13 +93,13 @@ describe("eval-runner", () => {
       .mockReturnValueOnce({ status: 0 } as any);
 
     vi.mocked(fs.existsSync).mockImplementation((target: any) => {
-      const value = String(target);
+      const value = norm(String(target));
       return (
         value.endsWith(
           "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
         ) ||
         value.endsWith("/skills/skill-a/SKILL.md") ||
-        value === "/repo/evals/skill-a.json"
+        value.endsWith("/repo/evals/skill-a.json")
       );
     });
 
@@ -179,13 +184,13 @@ describe("eval-runner", () => {
       .mockReturnValueOnce({ status: 0 } as any);
 
     vi.mocked(fs.existsSync).mockImplementation((target: any) => {
-      const value = String(target);
+      const value = norm(String(target));
       return (
         value.endsWith(
           "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
         ) ||
         value.endsWith("/skills/skill-a/SKILL.md") ||
-        value === "/repo/evals/skill-a.json"
+        value.endsWith("/repo/evals/skill-a.json")
       );
     });
 
@@ -218,13 +223,13 @@ describe("eval-runner", () => {
       .mockReturnValueOnce({ status: 0 } as any);
 
     vi.mocked(fs.existsSync).mockImplementation((target: any) => {
-      const value = String(target);
+      const value = norm(String(target));
       return (
         value.endsWith(
           "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
         ) ||
         value.endsWith("/skills/skill-a/SKILL.md") ||
-        value === "/repo/evals/skill-a.json"
+        value.endsWith("/repo/evals/skill-a.json")
       );
     });
 
@@ -258,13 +263,13 @@ describe("eval-runner", () => {
       .mockReturnValueOnce({ status: 0 } as any);
 
     vi.mocked(fs.existsSync).mockImplementation((target: any) => {
-      const value = String(target);
+      const value = norm(String(target));
       return (
         value.endsWith(
           "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
         ) ||
         value.endsWith("/skills/skill-a/SKILL.md") ||
-        value === "/repo/evals/skill-a.json"
+        value.endsWith("/repo/evals/skill-a.json")
       );
     });
 
@@ -298,13 +303,13 @@ describe("eval-runner", () => {
       .mockReturnValueOnce({ status: 0 } as any);
 
     vi.mocked(fs.existsSync).mockImplementation((target: any) => {
-      const value = String(target);
+      const value = norm(String(target));
       return (
         value.endsWith(
           "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
         ) ||
         value.endsWith("/skills/skill-a/SKILL.md") ||
-        value === "/repo/evals/skill-a.json"
+        value.endsWith("/repo/evals/skill-a.json")
       );
     });
 
@@ -337,7 +342,7 @@ describe("eval-runner", () => {
       .mockReturnValueOnce({ status: 0 } as any);
 
     vi.mocked(fs.existsSync).mockImplementation((target: any) => {
-      const value = String(target);
+      const value = norm(String(target));
       return (
         value.endsWith(
           "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
@@ -375,7 +380,7 @@ describe("eval-runner", () => {
       .mockReturnValueOnce({ status: 0 } as any);
 
     vi.mocked(fs.existsSync).mockImplementation((target: any) => {
-      const value = String(target);
+      const value = norm(String(target));
       return value.endsWith(
         "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
       );
@@ -396,7 +401,7 @@ describe("eval-runner", () => {
       .mockReturnValueOnce({ status: 0 } as any);
 
     vi.mocked(fs.existsSync).mockImplementation((target: any) => {
-      const value = String(target);
+      const value = norm(String(target));
       return (
         value.endsWith(
           "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
@@ -423,13 +428,13 @@ describe("eval-runner", () => {
       .mockReturnValueOnce({ status: 0 } as any);
 
     vi.mocked(fs.existsSync).mockImplementation((target: any) => {
-      const value = String(target);
+      const value = norm(String(target));
       return (
         value.endsWith(
           "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
         ) ||
         value.endsWith("/skills/skill-a/SKILL.md") ||
-        value === "/repo/evals/skill-a.json"
+        value.endsWith("/repo/evals/skill-a.json")
       );
     });
 
@@ -465,13 +470,13 @@ describe("eval-runner", () => {
       .mockReturnValueOnce({ status: 0 } as any);
 
     vi.mocked(fs.existsSync).mockImplementation((target: any) => {
-      const value = String(target);
+      const value = norm(String(target));
       return (
         value.endsWith(
           "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
         ) ||
         value.endsWith("/skills/skill-a/SKILL.md") ||
-        value === "/repo/evals/skill-a.json"
+        value.endsWith("/repo/evals/skill-a.json")
       );
     });
 
@@ -504,13 +509,13 @@ describe("eval-runner", () => {
       .mockReturnValueOnce({ status: 0 } as any);
 
     vi.mocked(fs.existsSync).mockImplementation((target: any) => {
-      const value = String(target);
+      const value = norm(String(target));
       return (
         value.endsWith(
           "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
         ) ||
         value.endsWith("/skills/skill-a/SKILL.md") ||
-        value === "/repo/evals/skill-a.json"
+        value.endsWith("/repo/evals/skill-a.json")
       );
     });
 
@@ -543,13 +548,13 @@ describe("eval-runner", () => {
       .mockReturnValueOnce({ status: 0 } as any);
 
     vi.mocked(fs.existsSync).mockImplementation((target: any) => {
-      const value = String(target);
+      const value = norm(String(target));
       return (
         value.endsWith(
           "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
         ) ||
         value.endsWith("/skills/skill-a/SKILL.md") ||
-        value === "/repo/evals/skill-a.json"
+        value.endsWith("/repo/evals/skill-a.json")
       );
     });
 
@@ -583,11 +588,11 @@ describe("eval-runner", () => {
       .mockReturnValueOnce({ status: 0 } as any); // anthropic import
 
     vi.mocked(fs.existsSync).mockImplementation((target: any) => {
-      const value = String(target);
+      const value = norm(String(target));
       return (
         value.endsWith("vendor/anthropic-skills/run_loop.py") ||
         value.endsWith("/skills/skill-a/SKILL.md") ||
-        value === "/repo/evals/skill-a.json"
+        value.endsWith("/repo/evals/skill-a.json")
       );
     });
 
@@ -638,13 +643,13 @@ describe("eval-runner", () => {
       .mockReturnValueOnce({ status: 0 } as any);
 
     vi.mocked(fs.existsSync).mockImplementation((target: any) => {
-      const value = String(target);
+      const value = norm(String(target));
       return (
         value.endsWith(
           "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
         ) ||
         value.endsWith("skills/my-skill/SKILL.md") ||
-        value === "/repo/evals/my-skill.json"
+        value.endsWith("/repo/evals/my-skill.json")
       );
     });
 
@@ -678,7 +683,7 @@ describe("eval-runner", () => {
       .mockReturnValueOnce({ status: 1 } as any); // python3 -c "import anthropic"
 
     vi.mocked(fs.existsSync).mockImplementation((target: any) =>
-      String(target).endsWith("vendor/anthropic-skills/run_loop.py")
+      norm(String(target)).endsWith("vendor/anthropic-skills/run_loop.py")
     );
 
     const result = checkEvaluatePrerequisites("/repo");
@@ -695,13 +700,13 @@ describe("eval-runner", () => {
       .mockReturnValueOnce({ status: 0 } as any);
 
     vi.mocked(fs.existsSync).mockImplementation((target: any) => {
-      const value = String(target);
+      const value = norm(String(target));
       return (
         value.endsWith(
           "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
         ) ||
         value.endsWith("/skills/skill-a/SKILL.md") ||
-        value === "/repo/evals/skill-a.json"
+        value.endsWith("/repo/evals/skill-a.json")
       );
     });
 
@@ -736,7 +741,7 @@ describe("eval-runner", () => {
       .mockReturnValueOnce({ status: 0 } as any);
 
     vi.mocked(fs.existsSync).mockImplementation((target: any) => {
-      const value = String(target);
+      const value = norm(String(target));
       return (
         value.endsWith(
           "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
