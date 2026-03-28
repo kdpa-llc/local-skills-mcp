@@ -403,9 +403,8 @@ This is test skill content.`
     const mockServer = serverInternal.server;
 
     // Get the ListTools handler
-    const { ListToolsRequestSchema } = await import(
-      "@modelcontextprotocol/sdk/types.js"
-    );
+    const { ListToolsRequestSchema } =
+      await import("@modelcontextprotocol/sdk/types.js");
     const listToolsHandler = mockServer.handlers.get(ListToolsRequestSchema);
 
     expect(listToolsHandler).toBeDefined();
@@ -441,9 +440,8 @@ This is test skill content.`
     const serverInternal = server as any;
     const mockServer = serverInternal.server;
 
-    const { ListToolsRequestSchema } = await import(
-      "@modelcontextprotocol/sdk/types.js"
-    );
+    const { ListToolsRequestSchema } =
+      await import("@modelcontextprotocol/sdk/types.js");
     const listToolsHandler = mockServer.handlers.get(ListToolsRequestSchema);
 
     const result = await listToolsHandler();
@@ -478,9 +476,8 @@ This is test skill content.`
       const mockServer = serverInternal.server;
 
       // Get the ListTools handler and check the description
-      const { ListToolsRequestSchema } = await import(
-        "@modelcontextprotocol/sdk/types.js"
-      );
+      const { ListToolsRequestSchema } =
+        await import("@modelcontextprotocol/sdk/types.js");
       const listToolsHandler = mockServer.handlers.get(ListToolsRequestSchema);
       const result = await listToolsHandler();
 
@@ -515,9 +512,8 @@ This is test skill content.`
       const serverInternal = server as any;
       const mockServer = serverInternal.server;
 
-      const { ListToolsRequestSchema } = await import(
-        "@modelcontextprotocol/sdk/types.js"
-      );
+      const { ListToolsRequestSchema } =
+        await import("@modelcontextprotocol/sdk/types.js");
       const listToolsHandler = mockServer.handlers.get(ListToolsRequestSchema);
       const result = await listToolsHandler();
 
@@ -559,9 +555,8 @@ This is test skill content.`
 
       // Test the ListTools handler
       const mockServer = serverInternal.server;
-      const { ListToolsRequestSchema } = await import(
-        "@modelcontextprotocol/sdk/types.js"
-      );
+      const { ListToolsRequestSchema } =
+        await import("@modelcontextprotocol/sdk/types.js");
       const listToolsHandler = mockServer.handlers.get(ListToolsRequestSchema);
       const result = await listToolsHandler();
 
@@ -592,9 +587,8 @@ This is test skill content.`
     const mockServer = serverInternal.server;
 
     // First get available skills
-    const { ListToolsRequestSchema, CallToolRequestSchema } = await import(
-      "@modelcontextprotocol/sdk/types.js"
-    );
+    const { ListToolsRequestSchema, CallToolRequestSchema } =
+      await import("@modelcontextprotocol/sdk/types.js");
     const listToolsHandler = mockServer.handlers.get(ListToolsRequestSchema);
     const listResult = await listToolsHandler();
 
@@ -642,9 +636,8 @@ This is test skill content.`
     const mockServer = serverInternal.server;
     const skillLoader = serverInternal.skillLoader;
 
-    const { ListToolsRequestSchema } = await import(
-      "@modelcontextprotocol/sdk/types.js"
-    );
+    const { ListToolsRequestSchema } =
+      await import("@modelcontextprotocol/sdk/types.js");
 
     const discoverSpy = vi
       .spyOn(skillLoader, "discoverSkills")
@@ -671,9 +664,8 @@ This is test skill content.`
     const mockServer = serverInternal.server;
     const skillLoader = serverInternal.skillLoader;
 
-    const { ListToolsRequestSchema } = await import(
-      "@modelcontextprotocol/sdk/types.js"
-    );
+    const { ListToolsRequestSchema } =
+      await import("@modelcontextprotocol/sdk/types.js");
 
     const longDescription = "A".repeat(1100);
 
@@ -714,9 +706,8 @@ This is test skill content.`
     const serverInternal = server as any;
     const mockServer = serverInternal.server;
 
-    const { CallToolRequestSchema } = await import(
-      "@modelcontextprotocol/sdk/types.js"
-    );
+    const { CallToolRequestSchema } =
+      await import("@modelcontextprotocol/sdk/types.js");
     const callToolHandler = mockServer.handlers.get(CallToolRequestSchema);
 
     const result = await callToolHandler({
@@ -736,9 +727,8 @@ This is test skill content.`
     const serverInternal = server as any;
     const mockServer = serverInternal.server;
 
-    const { CallToolRequestSchema } = await import(
-      "@modelcontextprotocol/sdk/types.js"
-    );
+    const { CallToolRequestSchema } =
+      await import("@modelcontextprotocol/sdk/types.js");
     const callToolHandler = mockServer.handlers.get(CallToolRequestSchema);
 
     const result = await callToolHandler({
@@ -758,9 +748,8 @@ This is test skill content.`
     const serverInternal = server as any;
     const mockServer = serverInternal.server;
 
-    const { CallToolRequestSchema } = await import(
-      "@modelcontextprotocol/sdk/types.js"
-    );
+    const { CallToolRequestSchema } =
+      await import("@modelcontextprotocol/sdk/types.js");
     const callToolHandler = mockServer.handlers.get(CallToolRequestSchema);
 
     const result = await callToolHandler({
