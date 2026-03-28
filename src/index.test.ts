@@ -861,6 +861,121 @@ This is test skill content.`
 
     consoleErrorSpy.mockRestore();
   });
+
+  it("should handle validate_skill CallTool request", async () => {
+    server = new LocalSkillsServer();
+
+    const serverInternal = server as any;
+    const mockServer = serverInternal.server;
+    const skillLoader = serverInternal.skillLoader;
+
+    const { CallToolRequestSchema } =
+      await import("@modelcontextprotocol/sdk/types.js");
+    const callToolHandler = mockServer.handlers.get(CallToolRequestSchema);
+
+    // First discover available skills
+    const skillNames = await skillLoader.discoverSkills();
+
+    if (skillNames.length > 0) {
+      const result = await callToolHandler({
+        params: {
+          name: "validate_skill",
+          arguments: { skill_name: skillNames[0] },
+        },
+      });
+
+      expect(result.content).toBeDefined();
+      expect(result.content[0].type).toBe("text");
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed).toHaveProperty("valid");
+      expect(parsed).toHaveProperty("errors");
+      expect(parsed).toHaveProperty("warnings");
+    }
+  });
+
+  it("should return error for validate_skill with missing skill_name", async () => {
+    server = new LocalSkillsServer();
+
+    const serverInternal = server as any;
+    const mockServer = serverInternal.server;
+
+    const { CallToolRequestSchema } =
+      await import("@modelcontextprotocol/sdk/types.js");
+    const callToolHandler = mockServer.handlers.get(CallToolRequestSchema);
+
+    const result = await callToolHandler({
+      params: {
+        name: "validate_skill",
+        arguments: {},
+      },
+    });
+
+    expect(result.content[0].text).toContain("Error");
+    expect(result.content[0].text).toContain("skill_name is required");
+  });
+
+  it("should return error for validate_skill with non-existent skill", async () => {
+    server = new LocalSkillsServer();
+
+    const serverInternal = server as any;
+    const mockServer = serverInternal.server;
+
+    const { CallToolRequestSchema } =
+      await import("@modelcontextprotocol/sdk/types.js");
+    const callToolHandler = mockServer.handlers.get(CallToolRequestSchema);
+
+    const result = await callToolHandler({
+      params: {
+        name: "validate_skill",
+        arguments: { skill_name: "totally-nonexistent-skill" },
+      },
+    });
+
+    expect(result.content[0].text).toContain("Error");
+    expect(result.content[0].text).toContain("not found");
+  });
+
+  it("should return error for evaluate_skill with missing skill_name", async () => {
+    server = new LocalSkillsServer();
+
+    const serverInternal = server as any;
+    const mockServer = serverInternal.server;
+
+    const { CallToolRequestSchema } =
+      await import("@modelcontextprotocol/sdk/types.js");
+    const callToolHandler = mockServer.handlers.get(CallToolRequestSchema);
+
+    const result = await callToolHandler({
+      params: {
+        name: "evaluate_skill",
+        arguments: {},
+      },
+    });
+
+    expect(result.content[0].text).toContain("Error");
+    expect(result.content[0].text).toContain("skill_name is required");
+  });
+
+  it("should return error for evaluate_skill with non-existent skill", async () => {
+    server = new LocalSkillsServer();
+
+    const serverInternal = server as any;
+    const mockServer = serverInternal.server;
+
+    const { CallToolRequestSchema } =
+      await import("@modelcontextprotocol/sdk/types.js");
+    const callToolHandler = mockServer.handlers.get(CallToolRequestSchema);
+
+    const result = await callToolHandler({
+      params: {
+        name: "evaluate_skill",
+        arguments: { skill_name: "totally-nonexistent-skill" },
+      },
+    });
+
+    expect(result.content[0].text).toContain("Error");
+    expect(result.content[0].text).toContain("not found");
+  });
 });
 
 describe("Version handling", () => {

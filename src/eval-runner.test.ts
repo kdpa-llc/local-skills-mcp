@@ -18,7 +18,11 @@ import { checkEvaluatePrerequisites, evaluateSkill } from "./eval-runner.js";
 
 describe("eval-runner", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
+    // Re-apply mocks after restore
+    vi.mocked(fs.existsSync).mockReturnValue(false);
+    vi.mocked(spawnSync).mockReturnValue({ status: 1 } as any);
+    vi.mocked(spawn).mockReturnValue(new EventEmitter() as any);
     process.env.ANTHROPIC_API_KEY = "test-key";
   });
 
@@ -168,6 +172,164 @@ describe("eval-runner", () => {
     );
   });
 
+  it("rejects when child process emits error event", async () => {
+    vi.mocked(spawnSync)
+      .mockReturnValueOnce({ status: 0 } as any)
+      .mockReturnValueOnce({ status: 0 } as any)
+      .mockReturnValueOnce({ status: 0 } as any);
+
+    vi.mocked(fs.existsSync).mockImplementation((target: any) => {
+      const value = String(target);
+      return (
+        value.endsWith(
+          "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
+        ) ||
+        value.endsWith("/skills/skill-a/SKILL.md") ||
+        value === "/repo/evals/skill-a.json"
+      );
+    });
+
+    const stdout = new EventEmitter();
+    const stderr = new EventEmitter();
+    const proc = new EventEmitter() as any;
+    proc.stdout = stdout;
+    proc.stderr = stderr;
+
+    vi.mocked(spawn).mockReturnValue(proc);
+
+    const promise = evaluateSkill(
+      {
+        skill_name: "skill-a",
+        skill_path: "/repo/skills/skill-a",
+        eval_set_path: "/repo/evals/skill-a.json",
+      },
+      "/repo"
+    );
+
+    proc.emit("error", new Error("spawn ENOENT"));
+
+    await expect(promise).rejects.toThrow("Failed to start run_loop.py");
+  });
+
+  it("rejects when child process exits with non-zero code", async () => {
+    vi.mocked(spawnSync)
+      .mockReturnValueOnce({ status: 0 } as any)
+      .mockReturnValueOnce({ status: 0 } as any)
+      .mockReturnValueOnce({ status: 0 } as any);
+
+    vi.mocked(fs.existsSync).mockImplementation((target: any) => {
+      const value = String(target);
+      return (
+        value.endsWith(
+          "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
+        ) ||
+        value.endsWith("/skills/skill-a/SKILL.md") ||
+        value === "/repo/evals/skill-a.json"
+      );
+    });
+
+    const stdout = new EventEmitter();
+    const stderr = new EventEmitter();
+    const proc = new EventEmitter() as any;
+    proc.stdout = stdout;
+    proc.stderr = stderr;
+
+    vi.mocked(spawn).mockReturnValue(proc);
+
+    const promise = evaluateSkill(
+      {
+        skill_name: "skill-a",
+        skill_path: "/repo/skills/skill-a",
+        eval_set_path: "/repo/evals/skill-a.json",
+      },
+      "/repo"
+    );
+
+    stderr.emit("data", "Something went wrong");
+    proc.emit("close", 1);
+
+    await expect(promise).rejects.toThrow("run_loop.py exited with code 1");
+  });
+
+  it("uses stdout when stderr is empty on non-zero exit", async () => {
+    vi.mocked(spawnSync)
+      .mockReturnValueOnce({ status: 0 } as any)
+      .mockReturnValueOnce({ status: 0 } as any)
+      .mockReturnValueOnce({ status: 0 } as any);
+
+    vi.mocked(fs.existsSync).mockImplementation((target: any) => {
+      const value = String(target);
+      return (
+        value.endsWith(
+          "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
+        ) ||
+        value.endsWith("/skills/skill-a/SKILL.md") ||
+        value === "/repo/evals/skill-a.json"
+      );
+    });
+
+    const stdout = new EventEmitter();
+    const stderr = new EventEmitter();
+    const proc = new EventEmitter() as any;
+    proc.stdout = stdout;
+    proc.stderr = stderr;
+
+    vi.mocked(spawn).mockReturnValue(proc);
+
+    const promise = evaluateSkill(
+      {
+        skill_name: "skill-a",
+        skill_path: "/repo/skills/skill-a",
+        eval_set_path: "/repo/evals/skill-a.json",
+      },
+      "/repo"
+    );
+
+    stdout.emit("data", "stdout error details");
+    proc.emit("close", 2);
+
+    await expect(promise).rejects.toThrow("stdout error details");
+  });
+
+  it("shows 'No output' when both stdout and stderr are empty on failure", async () => {
+    vi.mocked(spawnSync)
+      .mockReturnValueOnce({ status: 0 } as any)
+      .mockReturnValueOnce({ status: 0 } as any)
+      .mockReturnValueOnce({ status: 0 } as any);
+
+    vi.mocked(fs.existsSync).mockImplementation((target: any) => {
+      const value = String(target);
+      return (
+        value.endsWith(
+          "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
+        ) ||
+        value.endsWith("/skills/skill-a/SKILL.md") ||
+        value === "/repo/evals/skill-a.json"
+      );
+    });
+
+    const stdout = new EventEmitter();
+    const stderr = new EventEmitter();
+    const proc = new EventEmitter() as any;
+    proc.stdout = stdout;
+    proc.stderr = stderr;
+
+    vi.mocked(spawn).mockReturnValue(proc);
+
+    const promise = evaluateSkill(
+      {
+        skill_name: "skill-a",
+        skill_path: "/repo/skills/skill-a",
+        eval_set_path: "/repo/evals/skill-a.json",
+      },
+      "/repo"
+    );
+
+    proc.emit("close", 1);
+
+    await expect(promise).rejects.toThrow("No output.");
+  });
+
   it("requires an eval set when no default eval file exists", async () => {
     vi.mocked(spawnSync)
       .mockReturnValueOnce({ status: 0 } as any)
@@ -192,5 +354,416 @@ describe("eval-runner", () => {
         "/repo"
       )
     ).rejects.toThrow("Provide eval_set_path");
+  });
+
+  it("rejects when prerequisites are not met", async () => {
+    vi.mocked(spawnSync).mockReturnValue({ status: 1 } as any);
+    vi.mocked(fs.existsSync).mockReturnValue(false);
+
+    await expect(
+      evaluateSkill(
+        { skill_name: "skill-a", eval_set_path: "/repo/evals/skill-a.json" },
+        "/repo"
+      )
+    ).rejects.toThrow("Missing requirements");
+  });
+
+  it("rejects when skill SKILL.md does not exist", async () => {
+    vi.mocked(spawnSync)
+      .mockReturnValueOnce({ status: 0 } as any)
+      .mockReturnValueOnce({ status: 0 } as any)
+      .mockReturnValueOnce({ status: 0 } as any);
+
+    vi.mocked(fs.existsSync).mockImplementation((target: any) => {
+      const value = String(target);
+      return value.endsWith(
+        "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
+      );
+    });
+
+    await expect(
+      evaluateSkill(
+        { skill_name: "missing-skill", eval_set_path: "/repo/evals/x.json" },
+        "/repo"
+      )
+    ).rejects.toThrow("does not contain SKILL.md");
+  });
+
+  it("rejects when explicit eval_set_path does not exist", async () => {
+    vi.mocked(spawnSync)
+      .mockReturnValueOnce({ status: 0 } as any)
+      .mockReturnValueOnce({ status: 0 } as any)
+      .mockReturnValueOnce({ status: 0 } as any);
+
+    vi.mocked(fs.existsSync).mockImplementation((target: any) => {
+      const value = String(target);
+      return (
+        value.endsWith(
+          "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
+        ) || value.endsWith("/skills/skill-a/SKILL.md")
+      );
+    });
+
+    await expect(
+      evaluateSkill(
+        {
+          skill_name: "skill-a",
+          skill_path: "/repo/skills/skill-a",
+          eval_set_path: "/nonexistent/eval.json",
+        },
+        "/repo"
+      )
+    ).rejects.toThrow("eval_set_path does not exist");
+  });
+
+  it("parses JSON embedded in non-JSON output", async () => {
+    vi.mocked(spawnSync)
+      .mockReturnValueOnce({ status: 0 } as any)
+      .mockReturnValueOnce({ status: 0 } as any)
+      .mockReturnValueOnce({ status: 0 } as any);
+
+    vi.mocked(fs.existsSync).mockImplementation((target: any) => {
+      const value = String(target);
+      return (
+        value.endsWith(
+          "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
+        ) ||
+        value.endsWith("/skills/skill-a/SKILL.md") ||
+        value === "/repo/evals/skill-a.json"
+      );
+    });
+
+    const stdout = new EventEmitter();
+    const stderr = new EventEmitter();
+    const proc = new EventEmitter() as any;
+    proc.stdout = stdout;
+    proc.stderr = stderr;
+    vi.mocked(spawn).mockReturnValue(proc);
+
+    const promise = evaluateSkill(
+      {
+        skill_name: "skill-a",
+        skill_path: "/repo/skills/skill-a",
+        eval_set_path: "/repo/evals/skill-a.json",
+      },
+      "/repo"
+    );
+
+    stdout.emit(
+      "data",
+      'Some log output\n{"best_description": "desc"}\nMore log output\n'
+    );
+    proc.emit("close", 0);
+
+    await expect(promise).resolves.toEqual({ best_description: "desc" });
+  });
+
+  it("parses JSON from last line when embedded parse fails", async () => {
+    vi.mocked(spawnSync)
+      .mockReturnValueOnce({ status: 0 } as any)
+      .mockReturnValueOnce({ status: 0 } as any)
+      .mockReturnValueOnce({ status: 0 } as any);
+
+    vi.mocked(fs.existsSync).mockImplementation((target: any) => {
+      const value = String(target);
+      return (
+        value.endsWith(
+          "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
+        ) ||
+        value.endsWith("/skills/skill-a/SKILL.md") ||
+        value === "/repo/evals/skill-a.json"
+      );
+    });
+
+    const stdout = new EventEmitter();
+    const stderr = new EventEmitter();
+    const proc = new EventEmitter() as any;
+    proc.stdout = stdout;
+    proc.stderr = stderr;
+    vi.mocked(spawn).mockReturnValue(proc);
+
+    const promise = evaluateSkill(
+      {
+        skill_name: "skill-a",
+        skill_path: "/repo/skills/skill-a",
+        eval_set_path: "/repo/evals/skill-a.json",
+      },
+      "/repo"
+    );
+
+    stdout.emit("data", 'log line 1\nlog line 2\n{"scores":{"a":1}}\n');
+    proc.emit("close", 0);
+
+    await expect(promise).resolves.toEqual({ scores: { a: 1 } });
+  });
+
+  it("rejects when output contains no valid JSON", async () => {
+    vi.mocked(spawnSync)
+      .mockReturnValueOnce({ status: 0 } as any)
+      .mockReturnValueOnce({ status: 0 } as any)
+      .mockReturnValueOnce({ status: 0 } as any);
+
+    vi.mocked(fs.existsSync).mockImplementation((target: any) => {
+      const value = String(target);
+      return (
+        value.endsWith(
+          "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
+        ) ||
+        value.endsWith("/skills/skill-a/SKILL.md") ||
+        value === "/repo/evals/skill-a.json"
+      );
+    });
+
+    const stdout = new EventEmitter();
+    const stderr = new EventEmitter();
+    const proc = new EventEmitter() as any;
+    proc.stdout = stdout;
+    proc.stderr = stderr;
+    vi.mocked(spawn).mockReturnValue(proc);
+
+    const promise = evaluateSkill(
+      {
+        skill_name: "skill-a",
+        skill_path: "/repo/skills/skill-a",
+        eval_set_path: "/repo/evals/skill-a.json",
+      },
+      "/repo"
+    );
+
+    stdout.emit("data", "not json at all\njust text\n");
+    proc.emit("close", 0);
+
+    await expect(promise).rejects.toThrow("no JSON results were found");
+  });
+
+  it("rejects when output is empty", async () => {
+    vi.mocked(spawnSync)
+      .mockReturnValueOnce({ status: 0 } as any)
+      .mockReturnValueOnce({ status: 0 } as any)
+      .mockReturnValueOnce({ status: 0 } as any);
+
+    vi.mocked(fs.existsSync).mockImplementation((target: any) => {
+      const value = String(target);
+      return (
+        value.endsWith(
+          "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
+        ) ||
+        value.endsWith("/skills/skill-a/SKILL.md") ||
+        value === "/repo/evals/skill-a.json"
+      );
+    });
+
+    const stdout = new EventEmitter();
+    const stderr = new EventEmitter();
+    const proc = new EventEmitter() as any;
+    proc.stdout = stdout;
+    proc.stderr = stderr;
+    vi.mocked(spawn).mockReturnValue(proc);
+
+    const promise = evaluateSkill(
+      {
+        skill_name: "skill-a",
+        skill_path: "/repo/skills/skill-a",
+        eval_set_path: "/repo/evals/skill-a.json",
+      },
+      "/repo"
+    );
+
+    proc.emit("close", 0);
+
+    await expect(promise).rejects.toThrow("produced no JSON output");
+  });
+
+  it("uses legacy script invocation path", async () => {
+    process.env.ANTHROPIC_API_KEY = "test-key";
+
+    vi.mocked(spawnSync)
+      .mockReturnValueOnce({ status: 0 } as any) // python3
+      .mockReturnValueOnce({ status: 0 } as any) // claude
+      .mockReturnValueOnce({ status: 0 } as any); // anthropic import
+
+    vi.mocked(fs.existsSync).mockImplementation((target: any) => {
+      const value = String(target);
+      return (
+        value.endsWith("vendor/anthropic-skills/run_loop.py") ||
+        value.endsWith("/skills/skill-a/SKILL.md") ||
+        value === "/repo/evals/skill-a.json"
+      );
+    });
+
+    const stdout = new EventEmitter();
+    const stderr = new EventEmitter();
+    const proc = new EventEmitter() as any;
+    proc.stdout = stdout;
+    proc.stderr = stderr;
+    vi.mocked(spawn).mockReturnValue(proc);
+
+    const promise = evaluateSkill(
+      {
+        skill_name: "skill-a",
+        skill_path: "/repo/skills/skill-a",
+        eval_set_path: "/repo/evals/skill-a.json",
+        max_iterations: 3,
+        model: "opus",
+      },
+      "/repo"
+    );
+
+    stdout.emit("data", '{"best_description": "legacy"}\n');
+    proc.emit("close", 0);
+
+    await expect(promise).resolves.toEqual({ best_description: "legacy" });
+
+    expect(spawn).toHaveBeenCalledWith(
+      "python3",
+      expect.arrayContaining([
+        "/repo/vendor/anthropic-skills/run_loop.py",
+        "--skill-name",
+        "skill-a",
+        "--eval-set-path",
+        "/repo/evals/skill-a.json",
+        "--max-iterations",
+        "3",
+        "--model",
+        "opus",
+      ]),
+      expect.objectContaining({ cwd: "/repo" })
+    );
+  });
+
+  it("uses default skill path when skill_path not provided", async () => {
+    vi.mocked(spawnSync)
+      .mockReturnValueOnce({ status: 0 } as any)
+      .mockReturnValueOnce({ status: 0 } as any)
+      .mockReturnValueOnce({ status: 0 } as any);
+
+    vi.mocked(fs.existsSync).mockImplementation((target: any) => {
+      const value = String(target);
+      return (
+        value.endsWith(
+          "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
+        ) ||
+        value.endsWith("skills/my-skill/SKILL.md") ||
+        value === "/repo/evals/my-skill.json"
+      );
+    });
+
+    const stdout = new EventEmitter();
+    const stderr = new EventEmitter();
+    const proc = new EventEmitter() as any;
+    proc.stdout = stdout;
+    proc.stderr = stderr;
+    vi.mocked(spawn).mockReturnValue(proc);
+
+    const promise = evaluateSkill(
+      {
+        skill_name: "my-skill",
+        eval_set_path: "/repo/evals/my-skill.json",
+      },
+      "/repo"
+    );
+
+    stdout.emit("data", '{"best_description": "found"}\n');
+    proc.emit("close", 0);
+
+    await expect(promise).resolves.toEqual({ best_description: "found" });
+  });
+
+  it("detects missing anthropic package in legacy layout", () => {
+    process.env.ANTHROPIC_API_KEY = "test-key";
+
+    vi.mocked(spawnSync)
+      .mockReturnValueOnce({ status: 0 } as any) // python3 --version
+      .mockReturnValueOnce({ status: 0 } as any) // claude --version
+      .mockReturnValueOnce({ status: 1 } as any); // python3 -c "import anthropic"
+
+    vi.mocked(fs.existsSync).mockImplementation((target: any) =>
+      String(target).endsWith("vendor/anthropic-skills/run_loop.py")
+    );
+
+    const result = checkEvaluatePrerequisites("/repo");
+    expect(result.ok).toBe(false);
+    expect(result.missing).toContain(
+      'Python package "anthropic" (install with: pip install anthropic)'
+    );
+  });
+
+  it("handles SKILL.md suffix in skill_path", async () => {
+    vi.mocked(spawnSync)
+      .mockReturnValueOnce({ status: 0 } as any)
+      .mockReturnValueOnce({ status: 0 } as any)
+      .mockReturnValueOnce({ status: 0 } as any);
+
+    vi.mocked(fs.existsSync).mockImplementation((target: any) => {
+      const value = String(target);
+      return (
+        value.endsWith(
+          "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
+        ) ||
+        value.endsWith("/skills/skill-a/SKILL.md") ||
+        value === "/repo/evals/skill-a.json"
+      );
+    });
+
+    const stdout = new EventEmitter();
+    const stderr = new EventEmitter();
+    const proc = new EventEmitter() as any;
+    proc.stdout = stdout;
+    proc.stderr = stderr;
+    vi.mocked(spawn).mockReturnValue(proc);
+
+    const promise = evaluateSkill(
+      {
+        skill_name: "skill-a",
+        skill_path: "/repo/skills/skill-a/SKILL.md",
+        eval_set_path: "/repo/evals/skill-a.json",
+      },
+      "/repo"
+    );
+
+    stdout.emit("data", '{"best_description": "from-skillmd"}\n');
+    proc.emit("close", 0);
+
+    await expect(promise).resolves.toEqual({
+      best_description: "from-skillmd",
+    });
+  });
+
+  it("finds eval set in default candidate paths", async () => {
+    vi.mocked(spawnSync)
+      .mockReturnValueOnce({ status: 0 } as any)
+      .mockReturnValueOnce({ status: 0 } as any)
+      .mockReturnValueOnce({ status: 0 } as any);
+
+    vi.mocked(fs.existsSync).mockImplementation((target: any) => {
+      const value = String(target);
+      return (
+        value.endsWith(
+          "vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
+        ) ||
+        value.endsWith("/skills/skill-a/SKILL.md") ||
+        value.endsWith("/skills/skill-a/eval-set.json")
+      );
+    });
+
+    const stdout = new EventEmitter();
+    const stderr = new EventEmitter();
+    const proc = new EventEmitter() as any;
+    proc.stdout = stdout;
+    proc.stderr = stderr;
+    vi.mocked(spawn).mockReturnValue(proc);
+
+    const promise = evaluateSkill(
+      {
+        skill_name: "skill-a",
+        skill_path: "/repo/skills/skill-a",
+      },
+      "/repo"
+    );
+
+    stdout.emit("data", '{"scores":{}}\n');
+    proc.emit("close", 0);
+
+    await expect(promise).resolves.toEqual({ scores: {} });
   });
 });
