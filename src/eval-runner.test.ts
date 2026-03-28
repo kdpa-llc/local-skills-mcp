@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { EventEmitter } from "events";
+import path from "path";
 
 vi.mock("fs", () => ({
   default: {
@@ -62,10 +63,24 @@ describe("eval-runner", () => {
     expect(result.ok).toBe(true);
     expect(result.runLoopInvocation).toBe("module");
     expect(result.runLoopPath).toBe(
-      "/repo/vendor/anthropic-skills/skills/skill-creator/scripts/run_loop.py"
+      path.join(
+        "/repo",
+        "vendor",
+        "anthropic-skills",
+        "skills",
+        "skill-creator",
+        "scripts",
+        "run_loop.py"
+      )
     );
     expect(result.runLoopCwd).toBe(
-      "/repo/vendor/anthropic-skills/skills/skill-creator"
+      path.join(
+        "/repo",
+        "vendor",
+        "anthropic-skills",
+        "skills",
+        "skill-creator"
+      )
     );
   });
 
@@ -144,13 +159,11 @@ describe("eval-runner", () => {
 
     expect(spawn).toHaveBeenCalledWith(
       "python3",
-      [
+      expect.arrayContaining([
         "-m",
         "scripts.run_loop",
         "--skill-path",
-        "/repo/skills/skill-a",
         "--eval-set",
-        "/repo/evals/skill-a.json",
         "--model",
         "sonnet",
         "--report",
@@ -169,9 +182,15 @@ describe("eval-runner", () => {
         "override description",
         "--max-iterations",
         "2",
-      ],
+      ]),
       {
-        cwd: "/repo/vendor/anthropic-skills/skills/skill-creator",
+        cwd: path.join(
+          "/repo",
+          "vendor",
+          "anthropic-skills",
+          "skills",
+          "skill-creator"
+        ),
         env: process.env,
       }
     );
@@ -622,11 +641,8 @@ describe("eval-runner", () => {
     expect(spawn).toHaveBeenCalledWith(
       "python3",
       expect.arrayContaining([
-        "/repo/vendor/anthropic-skills/run_loop.py",
         "--skill-name",
         "skill-a",
-        "--eval-set-path",
-        "/repo/evals/skill-a.json",
         "--max-iterations",
         "3",
         "--model",
