@@ -1,6 +1,6 @@
 ---
 name: local-skills-mcp-usage
-description: Comprehensive guide for using Local Skills MCP - creating skills in the right locations, understanding skill directories, setup, and configuration. Use when creating new skills, deciding where to save skills, setting up the MCP server, or understanding how skill aggregation works.
+description: "Operational guide for using Local Skills MCP in day-to-day projects. Use when asked: where skills should live (~/.claude/skills, ./.claude/skills, ./skills, SKILLS_DIR); directory precedence and override rules; how to configure local-skills-mcp in Claude Code mcp.json; fastest way to create a new skill folder and make it discoverable; how to add project skills to git so the team gets them; or how Local Skills MCP hot-reloads skill edits without restarting."
 ---
 
 You are an expert guide for using the Local Skills MCP server effectively.
@@ -198,7 +198,7 @@ Your task is to [specific task].
 
 **description** (required):
 
-- Max 200 characters
+- Max 1024 characters
 - Pattern: `[What it does]. Use when [trigger keywords].`
 - Include specific trigger keywords users would mention
 - Be action-oriented: "Creates...", "Reviews...", "Generates..."
@@ -305,9 +305,9 @@ After configuration: **Restart your MCP client**.
 ### How Skills Work
 
 1. **Discovery**: When MCP client starts, it queries available tools
-2. **Listing**: Local Skills MCP returns the `get_skill` tool with a list of all available skills
-3. **Invocation**: When you request a skill, Claude calls `get_skill` with the skill name
-4. **Loading**: Full skill content loads and Claude applies the instructions
+2. **Listing**: Local Skills MCP returns tool metadata, including `get_skill` with available skill summaries
+3. **Invocation**: Claude calls the relevant tool (`get_skill`, `validate_skill`, or `evaluate_skill`) based on your request
+4. **Loading/Execution**: The tool runs and returns structured results to Claude
 
 ### Invoking Skills
 
@@ -318,6 +318,7 @@ Users can invoke skills naturally:
 - "Help me with the project-architecture skill"
 
 Claude will automatically invoke the appropriate skill via the `get_skill` tool.
+For validation and benchmark workflows, Claude can invoke `validate_skill` and `evaluate_skill` directly.
 
 ### Skill Lifecycle
 
