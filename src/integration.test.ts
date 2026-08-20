@@ -365,9 +365,12 @@ This skill's directory name is not its frontmatter name.`
       });
 
       const text = (response.content as any[])[0].text;
-      expect(text).toContain("**Source:**");
-      // Should contain some path
-      expect(text).toMatch(/\/.*skills/);
+      // Now that the suite serves a known directory, assert the actual value.
+      // The previous `/\/.*skills/` regex matched anywhere in the response and
+      // was in practice satisfied by forward slashes in the shipped skills'
+      // prose rather than by the source path, so it passed on Windows for the
+      // wrong reason and said nothing about the Source line.
+      expect(text).toContain(`**Source:** ${skillsDir}`);
     });
   });
 
