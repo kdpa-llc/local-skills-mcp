@@ -20,6 +20,33 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Runs before checkout so a credential problem is reported as itself.
+      # Without this, an expired RELEASE_TOKEN surfaces only as
+      # "could not read Username for 'https://github.com'" plus git exit 128
+      # from the checkout step, which reads like a git fault rather than an
+      # expired secret. That ambiguity kept the pipeline broken, and silent,
+      # for 279 days.
+      - name: Verify RELEASE_TOKEN
+        env:
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          if [ -z "$RELEASE_TOKEN" ]; then
+            echo "::error title=RELEASE_TOKEN missing::The RELEASE_TOKEN secret is not set for this repository. semantic-release pushes the release commit to a protected branch, so the default GITHUB_TOKEN cannot be used. Add a PAT or GitHub App token whose identity is allowed to bypass the branch protection on main."
+            exit 1
+          fi
+
+          status=$(curl -sS -o /dev/null -w '%{http_code}' \
+            -H "Authorization: Bearer $RELEASE_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/user || echo "000")
+
+          if [ "$status" != "200" ]; then
+            echo "::error title=RELEASE_TOKEN rejected::GitHub returned HTTP $status for the RELEASE_TOKEN secret. It is most likely expired or revoked (a PAT that has expired looks identical to a missing one at the git layer). Reissue it, or move to a GitHub App token, which does not expire the same way."
+            exit 1
+          fi
+
+          echo "RELEASE_TOKEN accepted by the GitHub API."
+
       - name: Checkout
         uses: actions/checkout@v6
         with:
