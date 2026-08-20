@@ -160,6 +160,7 @@ description: What this skill does and when to use it
 You are an expert at [domain]. Your task is to [specific task].
 
 Guidelines:
+
 1. Be specific and actionable
 2. Provide examples
 3. Include best practices
@@ -194,10 +195,12 @@ Your skill instructions in Markdown format...
 Use pattern: `[What it does]. Use when [trigger conditions/keywords].`
 
 ✅ **Good Examples:**
+
 - "Generates clear commit messages from git diffs. Use when writing commit messages or reviewing staged changes."
 - "Analyzes Excel spreadsheets and creates pivot tables. Use when working with .xlsx files or tabular data."
 
 ❌ **Poor Example:**
+
 - "Helps with Excel files"
 
 Specific trigger keywords help the AI make better decisions when selecting skills.
@@ -213,6 +216,7 @@ Specific trigger keywords help the AI make better decisions when selecting skill
 **Built-in Skills:**
 
 Three self-documenting skills are included:
+
 - `local-skills-mcp-usage` - Quick usage guide
 - `local-skills-mcp-guide` - Comprehensive documentation
 - `skill-creator` - Skill authoring best practices
@@ -220,6 +224,7 @@ Three self-documenting skills are included:
 **Skill Directories:**
 
 Auto-aggregates from multiple locations (later ones override earlier):
+
 1. Package built-in skills
 2. `~/.claude/skills/` - Global skills
 3. `./.claude/skills/` - Project-specific (hidden)
@@ -254,6 +259,7 @@ description: Reviews code for best practices, bugs, and security. Use when revie
 You are a code reviewer with expertise in software engineering best practices.
 
 Analyze the code for:
+
 1. Correctness and bugs
 2. Best practices and maintainability
 3. Performance and security issues
@@ -331,10 +337,12 @@ This project follows a [Code of Conduct][code-of-conduct].
 While Local Skills MCP provides expert prompt instructions, [MCP Compression Proxy][mcp-tool-aggregator] optimizes your tool descriptions with intelligent LLM-based compression.
 
 **Perfect combination:**
+
 - **Local Skills MCP** - Expert skills with lazy loading (~50 tokens/skill)
 - **MCP Compression Proxy** - Compressed tool descriptions (50-80% token reduction)
 
 **Together they enable:**
+
 - 🎯 Maximum context efficiency across skills AND tools
 - 🔗 Access to multiple MCP servers through one connection
 - ⚡ Minimal token consumption for large-scale workflows
