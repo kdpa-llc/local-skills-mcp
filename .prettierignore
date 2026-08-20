@@ -4,3 +4,10 @@ coverage
 *.min.js
 package-lock.json
 .tmp
+
+# Vendored third-party source (git submodule) — not ours to format.
+# eslint.config.js already ignores this path.
+vendor
+
+# Generated eval/benchmark artifacts
+evals/results
