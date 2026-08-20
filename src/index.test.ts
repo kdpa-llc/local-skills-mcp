@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { getAllSkillsDirectories, LocalSkillsServer } from "./index.js";
+import {
+  getAllSkillsDirectories,
+  LocalSkillsServer,
+  optionalNumber,
+  optionalString,
+  requireSkillName,
+} from "./index.js";
 import fs from "fs";
 import path from "path";
 import os from "os";
@@ -990,5 +996,158 @@ describe("Version handling", () => {
     expect(packageJson.version).toBeDefined();
     expect(typeof packageJson.version).toBe("string");
     expect(packageJson.version).toMatch(/^\d+\.\d+\.\d+/);
+  });
+});
+
+describe("requireSkillName", () => {
+  it("should accept a plain skill name", () => {
+    expect(requireSkillName("code-reviewer")).toBe("code-reviewer");
+  });
+
+  it("should trim surrounding whitespace", () => {
+    expect(requireSkillName("  code-reviewer  ")).toBe("code-reviewer");
+  });
+
+  it("should reject a missing name", () => {
+    expect(() => requireSkillName(undefined)).toThrow(
+      "skill_name is required and must be a non-empty string"
+    );
+  });
+
+  it("should reject an empty or whitespace-only name", () => {
+    expect(() => requireSkillName("")).toThrow("skill_name is required");
+    expect(() => requireSkillName("   ")).toThrow("skill_name is required");
+  });
+
+  it("should reject non-string values", () => {
+    expect(() => requireSkillName(123)).toThrow("skill_name is required");
+    expect(() => requireSkillName({ skill: "x" })).toThrow(
+      "skill_name is required"
+    );
+    expect(() => requireSkillName(null)).toThrow("skill_name is required");
+  });
+
+  it("should reject POSIX path traversal", () => {
+    expect(() => requireSkillName("../../etc")).toThrow("Invalid skill_name");
+    expect(() => requireSkillName("nested/skill")).toThrow(
+      "Invalid skill_name"
+    );
+    expect(() => requireSkillName("/etc/passwd")).toThrow("Invalid skill_name");
+  });
+
+  it("should reject Windows path traversal", () => {
+    expect(() => requireSkillName("..\\..\\windows")).toThrow(
+      "Invalid skill_name"
+    );
+    expect(() => requireSkillName("nested\\skill")).toThrow(
+      "Invalid skill_name"
+    );
+  });
+
+  it("should reject relative directory references", () => {
+    expect(() => requireSkillName(".")).toThrow("Invalid skill_name");
+    expect(() => requireSkillName("..")).toThrow("Invalid skill_name");
+  });
+
+  it("should reject names containing a null byte", () => {
+    expect(() => requireSkillName("skill\0.md")).toThrow("Invalid skill_name");
+  });
+});
+
+describe("optionalString / optionalNumber", () => {
+  it("should return undefined for omitted values", () => {
+    expect(optionalString(undefined, "model")).toBeUndefined();
+    expect(optionalString(null, "model")).toBeUndefined();
+    expect(optionalNumber(undefined, "holdout")).toBeUndefined();
+    expect(optionalNumber(null, "holdout")).toBeUndefined();
+  });
+
+  it("should pass through well-typed values", () => {
+    expect(optionalString("sonnet", "model")).toBe("sonnet");
+    expect(optionalNumber(0, "holdout")).toBe(0);
+    expect(optionalNumber(0.4, "holdout")).toBe(0.4);
+  });
+
+  it("should reject wrong-typed strings", () => {
+    expect(() => optionalString(5, "model")).toThrow("model must be a string");
+  });
+
+  it("should reject wrong-typed and non-finite numbers", () => {
+    expect(() => optionalNumber("5", "holdout")).toThrow(
+      "holdout must be a finite number"
+    );
+    expect(() => optionalNumber(Number.NaN, "holdout")).toThrow(
+      "holdout must be a finite number"
+    );
+    expect(() => optionalNumber(Number.POSITIVE_INFINITY, "holdout")).toThrow(
+      "holdout must be a finite number"
+    );
+  });
+});
+
+describe("Path traversal hardening", () => {
+  let server: LocalSkillsServer | null = null;
+  let outsideDir = "";
+
+  beforeEach(() => {
+    outsideDir = fs.mkdtempSync(path.join(os.tmpdir(), "outside-skills-"));
+    const secretSkill = path.join(outsideDir, "secret");
+    fs.mkdirSync(secretSkill, { recursive: true });
+    fs.writeFileSync(
+      path.join(secretSkill, "SKILL.md"),
+      "---\nname: secret\ndescription: Should be unreachable from a configured skills directory.\n---\n\nsecret body\n"
+    );
+  });
+
+  afterEach(async () => {
+    if (server) {
+      await server.close();
+      server = null;
+    }
+    await removeDir(outsideDir);
+  });
+
+  it("should refuse to validate a SKILL.md outside the skills directories", async () => {
+    server = new LocalSkillsServer();
+    const mockServer = (server as any).server;
+    const { CallToolRequestSchema } =
+      await import("@modelcontextprotocol/sdk/types.js");
+    const callToolHandler = mockServer.handlers.get(CallToolRequestSchema);
+
+    const result = await callToolHandler({
+      params: {
+        name: "validate_skill",
+        arguments: { skill_name: `../${path.basename(outsideDir)}/secret` },
+      },
+    });
+
+    expect(result.content[0].text).toContain("Invalid skill_name");
+    expect(result.content[0].text).not.toContain("secret body");
+  });
+
+  it("should refuse to evaluate a skill outside the skills directories", async () => {
+    server = new LocalSkillsServer();
+    const mockServer = (server as any).server;
+    const { CallToolRequestSchema } =
+      await import("@modelcontextprotocol/sdk/types.js");
+    const callToolHandler = mockServer.handlers.get(CallToolRequestSchema);
+
+    const result = await callToolHandler({
+      params: {
+        name: "evaluate_skill",
+        arguments: { skill_name: "../../../../tmp" },
+      },
+    });
+
+    expect(result.content[0].text).toContain("Invalid skill_name");
+  });
+
+  it("should not resolve a skill directory that escapes its base directory", () => {
+    server = new LocalSkillsServer();
+    const resolve = (server as any).resolveSkillFilePath.bind(server);
+
+    // Bypasses requireSkillName to exercise the containment check directly.
+    expect(resolve(`../${path.basename(outsideDir)}/secret`)).toBeNull();
+    expect(resolve("..")).toBeNull();
   });
 });

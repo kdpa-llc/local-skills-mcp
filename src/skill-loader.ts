@@ -81,6 +81,54 @@ export class SkillLoader {
   }
 
   /**
+   * Resolve a skill's location, refreshing the registry when the name is unknown.
+   *
+   * The registry is only populated by {@link discoverSkills}. MCP clients are
+   * free to call a tool without first listing tools (or may hold a cached tool
+   * list across a restart), so an unknown name triggers a rescan before the
+   * lookup is treated as a genuine miss. This also picks up skills added to
+   * disk since the last scan.
+   *
+   * @param skillName - The name of the skill to locate
+   * @returns The registry entry for the skill
+   * @throws {Error} If the skill cannot be found after a refresh
+   */
+  private async resolveSkillInfo(
+    skillName: string
+  ): Promise<{ path: string; source: string }> {
+    let skillInfo = this.skillRegistry.get(skillName);
+    if (!skillInfo) {
+      await this.discoverSkills();
+      skillInfo = this.skillRegistry.get(skillName);
+    }
+
+    if (!skillInfo) {
+      throw new Error(
+        `Skill "${skillName}" not found. ${this.describeAvailableSkills()}`
+      );
+    }
+
+    return skillInfo;
+  }
+
+  /**
+   * Build a human-readable hint listing what is currently available.
+   */
+  private describeAvailableSkills(): string {
+    const available = Array.from(this.skillRegistry.keys()).sort();
+    if (available.length === 0) {
+      return `No skills were discovered in: ${this.skillsPaths.join(", ") || "(no directories configured)"}`;
+    }
+
+    const MAX_LISTED = 25;
+    const listed = available.slice(0, MAX_LISTED).join(", ");
+    const remainder = available.length - MAX_LISTED;
+    return remainder > 0
+      ? `Available skills: ${listed} (and ${remainder} more)`
+      : `Available skills: ${listed}`;
+  }
+
+  /**
    * Discover all available skills aggregated from all directories.
    *
    * Scans all configured directories for subdirectories containing SKILL.md files.
@@ -165,18 +213,15 @@ export class SkillLoader {
    *   const skill = await loader.loadSkill('non-existent');
    * } catch (error) {
    *   console.error(error.message);
-   *   // "Skill "non-existent" not found. Run list_skills to see available skills."
+   *   // "Skill "non-existent" not found. Available skills: code-reviewer, test-generator"
    * }
    * ```
    */
   async loadSkill(skillName: string): Promise<Skill> {
-    // Get skill location from registry
-    const skillInfo = this.skillRegistry.get(skillName);
-    if (!skillInfo) {
-      throw new Error(
-        `Skill "${skillName}" not found. Run list_skills to see available skills.`
-      );
-    }
+    // Get skill location from registry, refreshing it if the name is unknown.
+    // The registry is empty until discoverSkills() runs, and clients are not
+    // required to call tools/list before tools/call, so resolve lazily here.
+    const skillInfo = await this.resolveSkillInfo(skillName);
 
     const skillFilePath = path.join(skillInfo.path, "SKILL.md");
 
@@ -223,10 +268,7 @@ export class SkillLoader {
   async getSkillMetadata(
     skillName: string
   ): Promise<SkillMetadata & { source: string }> {
-    const skillInfo = this.skillRegistry.get(skillName);
-    if (!skillInfo) {
-      throw new Error(`Skill "${skillName}" not found`);
-    }
+    const skillInfo = await this.resolveSkillInfo(skillName);
 
     const skillFilePath = path.join(skillInfo.path, "SKILL.md");
 
