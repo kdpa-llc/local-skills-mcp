@@ -7,6 +7,10 @@ on:
       - next
       - beta
       - alpha
+  # Lets a release be retried without an empty commit. Needed whenever a run
+  # failed for a reason outside the code — an expired RELEASE_TOKEN or missing
+  # npm credentials — where the fix is a settings change, not a push.
+  workflow_dispatch:
 
 permissions:
   contents: write
