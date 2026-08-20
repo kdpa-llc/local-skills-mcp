@@ -4,7 +4,7 @@ Get up and running with Local Skills MCP in 5 minutes!
 
 ## Prerequisites
 
-- Node.js 18+ installed
+- Node.js 22+ installed
 - Claude Code or another MCP-compatible client
 
 ## Installation
