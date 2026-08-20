@@ -105,22 +105,24 @@ sequenceDiagram
     Loader->>FS: Scan directories
     FS-->>Loader: Skill directories
     Loader-->>Server: ['skill1', 'skill2', ...]
-    Server-->>Client: Tools: [get_skill]<br/>+ Available skills list
+    Server-->>Client: Tools: [get_skill, validate_skill,<br/>evaluate_skill] + available skills list
 
     Note over Client,FS: Skill Invocation
     Client->>Server: CallTool: get_skill<br/>{skill_name: 'code-reviewer'}
+    Server->>Server: Validate skill_name<br/>(single directory name)
     Server->>Loader: loadSkill('code-reviewer')
 
-    alt Skill in Cache
-        Loader-->>Server: Cached Skill
-    else Skill not in Cache
+    alt Name known to registry
         Loader->>FS: Read SKILL.md
-        FS-->>Loader: File content
-        Loader->>Loader: Parse YAML frontmatter
-        Loader->>Loader: Validate metadata
-        Loader->>Loader: Cache skill
-        Loader-->>Server: Loaded Skill
+    else Name unknown
+        Loader->>FS: Rescan directories, then read
+        Note right of Loader: Clients need not call ListTools first,<br/>and skills may appear after the last scan
     end
+
+    FS-->>Loader: File content
+    Loader->>Loader: Parse YAML frontmatter
+    Loader->>Loader: Validate metadata
+    Loader-->>Server: Loaded Skill
 
     Server->>Server: Format response
     Server-->>Client: Skill content + metadata
@@ -131,6 +133,11 @@ sequenceDiagram
 1. **Initialization**: Client connects to server via stdio
 2. **Tool Discovery**: Client requests available tools, server responds with skill list
 3. **Skill Invocation**: Client requests specific skill, server loads and returns it
+
+**No content caching.** Skills are read fresh from disk on every request so that
+edits to a SKILL.md take effect without restarting the server. Only the
+_registry_ — the map of skill name to directory — is held in memory, and an
+unknown name rebuilds it before the lookup is treated as a miss.
 
 ---
 
@@ -377,12 +384,17 @@ flowchart TD
 - `setupHandlers()`: Register MCP request handlers
 - `setupErrorHandling()`: Configure error handlers and signals
 - `handleGetSkill()`: Process get_skill tool calls
+- `handleValidateSkill()`: Process validate_skill tool calls
+- `handleEvaluateSkill()`: Process evaluate_skill tool calls
 - `run()`: Start server and connect transport
 
 **State:**
 
 - `server`: MCP Server instance
 - `skillLoader`: SkillLoader instance
+- `skillsDirs`: Directories this instance serves. Defaults to
+  `getAllSkillsDirectories()`; the constructor accepts an explicit list, which
+  is how tests stay independent of the host's `~/.claude/skills`.
 
 ### SkillLoader
 
@@ -608,16 +620,43 @@ grep "running on stdio" server.log
 
 ### Current Security Model
 
-1. **Filesystem Access**: Server only reads from configured directories
-2. **Input Validation**: Skill names and paths are validated
-3. **No Write Operations**: Server is read-only
-4. **No Code Execution**: Skills are plain text, not executed
+1. **Filesystem Access**: Reads are confined to the configured skill directories.
+2. **Input Validation**: `skill_name` must be a single directory name — values
+   containing `/`, `\`, or a null byte, and the relative references `.` and
+   `..`, are rejected before any path is built.
+3. **Registry-gated lookups**: All three tools resolve a skill through the
+   registry built by `discoverSkills()`, so a name can only ever reach a
+   directory that discovery actually found. There is one lookup path, not one
+   per tool.
+
+### What is _not_ read-only
+
+`get_skill` and `validate_skill` only read. `evaluate_skill` does neither:
+
+- It **spawns a Python subprocess** (`run_loop.py` from the vendored
+  `anthropic-skills` submodule) and inherits the current environment.
+- Its optimizer **writes to SKILL.md** in the skill directory it is given.
+- It requires an authenticated Claude CLI and makes model calls.
+
+Treat `evaluate_skill` as a development tool, not something to expose to
+untrusted callers. If that matters for a deployment, do not ship the submodule
+— `checkEvaluatePrerequisites()` reports the tool as unavailable when
+`run_loop.py` is absent, and the other two tools continue to work.
 
 ### Potential Risks
 
-1. **Path Traversal**: Mitigated by validating skill names
-2. **Sensitive Data in Skills**: User responsibility to not store secrets
-3. **Malicious YAML**: YAML library may have parsing vulnerabilities (use trusted sources)
+1. **Path Traversal**: Mitigated by the name validation and registry gating
+   above. Note this was a real defect: before it was fixed, `validate_skill`
+   and `evaluate_skill` built paths directly from caller input and could reach
+   a `SKILL.md` outside every configured directory.
+2. **Prompt injection**: The realistic adversary for a local stdio server is
+   the calling model, not a remote attacker — and a skills server is exactly
+   the kind of tool that gets pointed at untrusted content.
+3. **Symlinked skill directories**: Skipped by discovery, so they are not
+   reachable through any tool. A symlinked `SKILL.md` _inside_ a real skill
+   directory is followed, which is what makes the common dotfiles setup work.
+4. **Sensitive Data in Skills**: User responsibility to not store secrets
+5. **Malicious YAML**: YAML library may have parsing vulnerabilities (use trusted sources)
 
 ### Best Practices
 
