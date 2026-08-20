@@ -1,8 +1,8 @@
 name: Dependency Review
 
 on:
+  # Unfiltered so stacked PRs are reviewed too. See ci.yml.
   pull_request:
-    branches: [main, develop]
 
 permissions:
   contents: read
