@@ -3,8 +3,8 @@ name: CodeQL
 on:
   push:
     branches: [main, develop]
+  # Unfiltered so stacked PRs are scanned too. See ci.yml.
   pull_request:
-    branches: [main, develop]
   schedule:
     # Run at 00:00 UTC every Monday
     - cron: '0 0 * * 1'

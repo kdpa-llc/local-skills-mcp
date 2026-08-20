@@ -3,8 +3,9 @@ name: CI
 on:
   push:
     branches: [main, develop]
+  # Deliberately unfiltered: a PR based on another PR's branch is still code
+  # heading for main, and a base filter of [main, develop] silently skipped it.
   pull_request:
-    branches: [main, develop]
 
 jobs:
   test:
