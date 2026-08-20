@@ -86,8 +86,8 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.24.3",
-    "yaml": "^2.8.2"
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "yaml": "^2.9.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.2.0",
