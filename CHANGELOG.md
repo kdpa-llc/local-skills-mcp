@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.0.0 (2026-08-20)
+
+- feat!: signal the Node.js 22 requirement and make "!" mark a breaking change ([599a0fd](https://github.com/kdpa-llc/local-skills-mcp/commit/599a0fd)), closes [#98](https://github.com/kdpa-llc/local-skills-mcp/issues/98) [#98](https://github.com/kdpa-llc/local-skills-mcp/issues/98) [#98](https://github.com/kdpa-llc/local-skills-mcp/issues/98)
+- feat!: signal the Node.js 22 requirement and make "!" mark a breaking change (#106) ([f10dc86](https://github.com/kdpa-llc/local-skills-mcp/commit/f10dc86)), closes [#106](https://github.com/kdpa-llc/local-skills-mcp/issues/106) [#98](https://github.com/kdpa-llc/local-skills-mcp/issues/98) [#98](https://github.com/kdpa-llc/local-skills-mcp/issues/98) [#98](https://github.com/kdpa-llc/local-skills-mcp/issues/98)
+
+### BREAKING CHANGE
+
+- Node.js 18 and 20 are not supported. The minimum runtime is
+  Node.js 22. This shipped in 0.5.0 but was released as a minor version by
+  mistake; 1.0.0 states it correctly.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_015oP5dZ2WxDSSSpMoRtbASi
+
+- signal the Node.js 22 requirement and make "!" mark a breaking change (#106)
+
 ## 0.5.0 (2026-08-20)
 
 - fix: align evaluate_skill with anthropics run loop ([83f1357](https://github.com/kdpa-llc/local-skills-mcp/commit/83f1357))
