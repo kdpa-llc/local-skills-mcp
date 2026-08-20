@@ -70,14 +70,21 @@ local-skills-mcp/
   - `$SKILLS_DIR` (user-defined custom directory)
 - Parses SKILL.md files with YAML frontmatter
 - Validates skill format (name, description requirements)
-- Implements skill caching for performance
+- Reads skill content fresh from disk on every request, so edits to a SKILL.md
+  take effect without restarting the server. Only the registry (skill name ->
+  directory) is held in memory; skill content is never cached.
 - Resolves skill name conflicts (later directories override earlier)
 
 **Important functions**:
 
-- `loadSkills()` - Main aggregation function
-- YAML frontmatter parsing
-- Skill validation logic
+- `getAllSkillsDirectories()` in `src/index.ts` - builds the directory list and
+  its priority order
+- `SkillLoader.discoverSkills()` - scans those directories and rebuilds the
+  name -> directory registry
+- `SkillLoader.loadSkill()` - reads and parses one SKILL.md, fresh each call
+- `SkillLoader.getSkillLocation()` - registry lookup without parsing, used by
+  `validate_skill` and `evaluate_skill` so a malformed file can still be
+  inspected
 
 ### 3. Type Definitions (src/types.ts)
 
@@ -95,7 +102,7 @@ local-skills-mcp/
 
 1. Server starts via stdio transport
 2. Skill loader aggregates skills from all configured directories
-3. Skills are validated and cached in memory
+3. Skill names are validated and recorded in the in-memory registry (content is not cached)
 4. MCP server initializes and registers the skill tools
 5. `get_skill` description is generated with current skill list and metadata
 
@@ -161,10 +168,10 @@ A: It aggregates from multiple locations: `~/.claude/skills/`, `./.claude/skills
 A: Via the Model Context Protocol over stdio transport. See `src/index.ts` for the server implementation.
 
 **Q: How are SKILL.md files parsed?**
-A: `skill-loader.ts` reads files, extracts YAML frontmatter, validates required fields, and caches the parsed content.
+A: `skill-loader.ts` reads files, extracts YAML frontmatter and validates required fields. It does not cache parsed content — each request re-reads the file, which is what makes hot reload work.
 
 **Q: How can I modify Local Skills MCP's skill aggregation?**
-A: Edit the `loadSkills()` function in `src/skill-loader.ts` to add new directories or change priority.
+A: Edit `getAllSkillsDirectories()` in `src/index.ts` — that function builds the directory list, and its order is the priority order (later entries win on duplicate skill names). `SkillLoader` receives that list and does not decide it.
 
 **Q: What's the build process?**
 A: TypeScript source in `src/` compiles to JavaScript in `dist/` using `npm run build`. The `prepare` script runs automatically on install.
