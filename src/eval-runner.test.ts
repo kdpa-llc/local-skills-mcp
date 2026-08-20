@@ -24,8 +24,11 @@ function norm(p: string): string {
 
 describe("eval-runner", () => {
   beforeEach(() => {
-    vi.restoreAllMocks();
-    // Re-apply mocks after restore
+    // resetAllMocks, not restoreAllMocks: as of Vitest 4 the latter only
+    // restores vi.spyOn spies, so unconsumed mockReturnValueOnce queues from
+    // an earlier test leaked into the next one and shifted its expectations.
+    vi.resetAllMocks();
+    // Re-apply mocks after reset
     vi.mocked(fs.existsSync).mockReturnValue(false);
     vi.mocked(spawnSync).mockReturnValue({ status: 1 } as any);
     vi.mocked(spawn).mockReturnValue(new EventEmitter() as any);
