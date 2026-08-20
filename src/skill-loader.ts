@@ -245,7 +245,8 @@ export class SkillLoader {
       return skill;
     } catch (error) {
       throw new Error(
-        `Failed to load skill "${skillName}": ${(error as Error).message}`
+        `Failed to load skill "${skillName}": ${(error as Error).message}`,
+        { cause: error }
       );
     }
   }
@@ -285,7 +286,8 @@ export class SkillLoader {
       };
     } catch (error) {
       throw new Error(
-        `Failed to load metadata for skill "${skillName}": ${(error as Error).message}`
+        `Failed to load metadata for skill "${skillName}": ${(error as Error).message}`,
+        { cause: error }
       );
     }
   }
