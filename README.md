@@ -72,7 +72,7 @@ Transform AI capabilities with structured, expert-level instructions for special
 
 ### 1. Install
 
-**Requirements:** Node.js 18+
+**Requirements:** Node.js 22+
 
 Choose one installation method:
 

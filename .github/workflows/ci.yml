@@ -13,7 +13,7 @@ jobs:
 
     strategy:
       matrix:
-        node: [18, 20, 22]
+        node: [22, 24]
         os: [ubuntu-latest, windows-latest, macos-latest]
       fail-fast: false
 
@@ -47,7 +47,7 @@ jobs:
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
-        if: matrix.os == 'ubuntu-latest' && matrix.node == 20
+        if: matrix.os == 'ubuntu-latest' && matrix.node == 22
         with:
           files: ./coverage/coverage-final.json
           flags: unittests
@@ -67,7 +67,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install dependencies
