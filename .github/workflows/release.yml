@@ -59,6 +59,15 @@ jobs:
         with:
           node-version: "lts/*"
           cache: "npm"
+          # Required for either npm auth path:
+          #  - Trusted publishing (OIDC): npm >= 11.5.1 uses the id-token
+          #    permission declared above once a trusted publisher for this
+          #    workflow is configured on npmjs.com. No secret involved.
+          #  - NPM_TOKEN: semantic-release writes its own .npmrc from the
+          #    NPM_TOKEN env var set on the Release step.
+          # publish.yml already used OIDC; release.yml did not set a registry,
+          # so the two publish paths disagreed about how they authenticate.
+          registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
         run: npm ci
