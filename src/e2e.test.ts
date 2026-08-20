@@ -504,10 +504,11 @@ describeE2E("E2E Tests - Subprocess with Stdio Transport", () => {
         },
       });
 
-      // Should return error as tool result (skill not found)
+      // Should be rejected as an invalid name rather than resolved as a path
       expect(result.content).toBeDefined();
       expect(result.content[0].type).toBe("text");
-      expect(result.content[0].text).toContain("not found");
+      expect(result.content[0].text).toContain("Invalid skill_name");
+      expect(result.content[0].text).not.toContain("root:");
     });
   });
 });

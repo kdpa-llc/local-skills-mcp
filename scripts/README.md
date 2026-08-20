@@ -27,3 +27,28 @@ npm run generate:server-json
 ## verify-links.js
 
 Verifies that links in markdown files are valid (existing script).
+
+## benchmark-shipped-skills.js / optimize-shipped-skills.js
+
+Measure and tune how reliably the bundled skills in `skills/` trigger.
+
+**Usage:**
+
+```bash
+npm run skills:benchmark-shipped:eval  # Benchmark shipped skills
+npm run skills:benchmark-shipped       # Dry-run optimization pass
+npm run skills:optimize-shipped        # Optimization pass, writing SKILL.md
+```
+
+**Eval directory layout:**
+
+| Path                 | Contents                     | Tracked in git |
+| -------------------- | ---------------------------- | -------------- |
+| `evals/<skill>.json` | Curated eval set (input)     | Yes            |
+| `evals/results/`     | Benchmark artifacts (output) | No             |
+
+Each `evals/<skill>.json` is a hand-maintained list of `{ query, should_trigger }`
+cases, named after the skill directory it covers. `eval_set_path` defaults to
+`evals/<skill_name>.json`, so a shipped skill needs a matching file here for
+`evaluate_skill` and both scripts above to run. Run artifacts land in
+`evals/results/`, which is gitignored — keep generated output out of the inputs.

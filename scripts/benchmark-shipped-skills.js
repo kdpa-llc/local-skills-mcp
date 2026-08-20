@@ -252,8 +252,11 @@ async function main() {
     "skills",
     "skill-creator"
   );
+  // Curated eval sets live in evals/*.json (tracked); run artifacts are
+  // written to evals/results/ (gitignored) so inputs stay separate from output.
   const evalDir = path.join(repoRoot, "evals");
-  fs.mkdirSync(evalDir, { recursive: true });
+  const resultsDir = path.join(evalDir, "results");
+  fs.mkdirSync(resultsDir, { recursive: true });
 
   // Resolve local-skills-mcp path only if explicitly provided via --local-skills-mcp-path.
   // By default, use command-file mode (creates .claude/commands/ files) which
@@ -401,7 +404,7 @@ async function main() {
 
   const outputPath =
     args.outputPath ||
-    path.join(evalDir, `shipped-skill-benchmark-${runId}.json`);
+    path.join(resultsDir, `shipped-skill-benchmark-${runId}.json`);
   fs.writeFileSync(outputPath, JSON.stringify(output, null, 2));
   console.log(`Saved benchmark artifact: ${outputPath}`);
 }

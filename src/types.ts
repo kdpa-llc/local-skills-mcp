@@ -10,7 +10,8 @@ export interface SkillMetadata {
  * Full skill definition including prompt content
  */
 export interface Skill {
-  name: string;
+  name: string; // Directory name — the key that get_skill accepts
+  title: string; // Display name from YAML frontmatter, may differ from name
   description: string;
   content: string;
   path: string;

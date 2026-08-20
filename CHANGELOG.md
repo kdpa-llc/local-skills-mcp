@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>0.4.4 (2025-11-11)</small>
+
+- fix: add @semantic-release/git plugin and sync version to 0.4.3 ([4b5ef0c](https://github.com/kdpa-llc/local-skills-mcp/commit/4b5ef0c))
+
+## <small>0.4.3 (2025-11-11)</small>
+
+- fix: revert release workflow to direct commits instead of PR creation ([3390139](https://github.com/kdpa-llc/local-skills-mcp/commit/3390139))
+
 ## <small>0.4.2 (2025-11-11)</small>
 
 - docs: add npm downloads and types badges to README ([110c285](https://github.com/kdpa-llc/local-skills-mcp/commit/110c285))

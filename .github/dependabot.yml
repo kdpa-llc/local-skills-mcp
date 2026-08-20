@@ -26,9 +26,12 @@ updates:
       - "automated"
     # Allow both direct and indirect updates
     open-pull-requests-limit: 5
-    # Prefix commit messages
+    # Prefix commit messages.
+    # Production bumps use "fix" so a runtime dependency update — including a
+    # security patch that auto-merges — cuts a patch release on its own.
+    # Development bumps stay "chore", which .releaserc.json maps to no release.
     commit-message:
-      prefix: "chore"
+      prefix: "fix"
       prefix-development: "chore"
       include: "scope"
 
