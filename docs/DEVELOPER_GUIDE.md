@@ -137,7 +137,7 @@ local-skills-mcp/
 ### Key Files
 
 - **src/index.ts**: Main entry point, MCP server setup, request handlers
-- **src/skill-loader.ts**: Core logic for skill discovery, loading, caching
+- **src/skill-loader.ts**: Core logic for skill discovery and loading (no content caching — see below)
 - **src/types.ts**: TypeScript interfaces for Skill and SkillMetadata
 - **package.json**: Dependencies, scripts, and package metadata
 - **tsconfig.json**: TypeScript compiler options
@@ -355,11 +355,20 @@ tail -f server.log
 2. Check MCP client configuration
 3. Review stdio communication in logs
 
-**Caching issues:**
+**Skill not picked up:**
 
-1. Restart server to clear cache
-2. Check `skillCache` contents with debug logs
-3. Verify `discoverSkills()` is called before `loadSkill()`
+There is no content cache to clear, and no `skillCache` to inspect — those
+appeared in earlier versions of this guide but never in the code. `loadSkill()`
+re-reads SKILL.md from disk on every call, so an edit applies to the next
+request without a restart.
+
+1. Confirm the skill's directory is under one of the paths reported at startup
+2. Confirm the directory contains a `SKILL.md` (discovery skips directories
+   without one, and skips symlinked skill directories entirely)
+3. Run `validate_skill` on it — a file whose frontmatter fails to parse is
+   discovered but errors on load
+4. `discoverSkills()` does **not** need to run first; an unknown name triggers
+   a registry rescan before it is treated as a miss
 
 ---
 
@@ -430,7 +439,7 @@ Use JSDoc for all public APIs:
 
 ````typescript
 /**
- * Load a specific skill by name with lazy loading and caching.
+ * Load a specific skill by name, reading fresh from disk each time.
  *
  * @param skillName - The name of the skill to load
  * @returns Promise resolving to the complete Skill object
@@ -666,18 +675,26 @@ console.error("Debug info:", data);
 console.log("Debug info:", data);
 ```
 
-### 5. Testing with Cached Skills
+### 5. Test isolation
 
-**Problem**: Cached data from previous test runs.
+**Problem**: State leaking between tests. Not skill content — that is re-read
+every call — but the loader's registry, and mock state.
 
-**Solution**: Clear cache in beforeEach:
+**Solution**: Build a fresh loader per test, and reset mocks rather than
+restoring them:
 
 ```typescript
 beforeEach(() => {
   loader = new SkillLoader([testDir]);
-  // Cache is fresh for each test
+  // As of Vitest 4, vi.restoreAllMocks() only restores vi.spyOn spies, so
+  // unconsumed mockReturnValueOnce queues leak into the next test.
+  vi.resetAllMocks();
 });
 ```
+
+Prefer passing an explicit directory list — `new LocalSkillsServer([fixtureDir])`
+— over relying on the default locations, which include the developer's own
+`~/.claude/skills` and make results machine-dependent.
 
 ### 6. Type Assertions
 

@@ -66,7 +66,7 @@ Transform AI capabilities with structured, expert-level instructions for special
 - **🔥 Hot Reload** - Changes apply instantly without restart (new skills, edits, deletions)
 - **🎯 Multi-Source** - Auto-aggregates from built-in skills, `~/.claude/skills`, `./.claude/skills`, `./skills`, custom paths
 - **📦 Zero Config** - Works out-of-the-box with standard locations
-- **✨ Simple API** - Single tool (`get_skill`) with dynamic discovery
+- **✨ Focused API** - Three tools: `get_skill` to load one, `validate_skill` to check a SKILL.md, `evaluate_skill` to measure how reliably it triggers
 
 ## 🚀 Quick Start
 

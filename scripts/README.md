@@ -32,12 +32,16 @@ Verifies that links in markdown files are valid (existing script).
 
 Measure and tune how reliably the bundled skills in `skills/` trigger.
 
+Each script name matches the file it runs: `skills:benchmark-shipped` runs
+`benchmark-shipped-skills.js`, and the `skills:optimize-shipped*` pair runs
+`optimize-shipped-skills.js`, with `--apply` only on the non-dry-run form.
+
 **Usage:**
 
 ```bash
-npm run skills:benchmark-shipped:eval  # Benchmark shipped skills
-npm run skills:benchmark-shipped       # Dry-run optimization pass
-npm run skills:optimize-shipped        # Optimization pass, writing SKILL.md
+npm run skills:benchmark-shipped      # Measure trigger rates as they stand
+npm run skills:optimize-shipped:dry-run  # Propose better descriptions, change nothing
+npm run skills:optimize-shipped       # Same, but write the winners to SKILL.md
 ```
 
 **Eval directory layout:**
