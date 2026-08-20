@@ -531,4 +531,4 @@ When users ask you to create or work with skills:
    - Offer to test the skill immediately
    - Willing to refine based on usage
 
-Remember: You can create skills directly by writing files to the appropriate directories. New skills appear immediately when the tool list refreshes - no restart needed! (Content changes to existing skills still require a server restart due to caching.)
+Remember: You can create skills directly by writing files to the appropriate directories. New skills appear immediately when the tool list refreshes, and edits to an existing SKILL.md are picked up on the next `get_skill` call - no restart needed in either case, because skill content is read fresh from disk every time.
