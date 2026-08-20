@@ -286,8 +286,11 @@ async function main() {
 
   const startedAt = new Date().toISOString();
   const runId = new Date().toISOString().replace(/[:.]/g, "-");
+  // Curated eval sets live in evals/*.json (tracked); run artifacts are
+  // written to evals/results/ (gitignored) so inputs stay separate from output.
   const evalDir = path.join(repoRoot, "evals");
-  fs.mkdirSync(evalDir, { recursive: true });
+  const resultsDir = path.join(evalDir, "results");
+  fs.mkdirSync(resultsDir, { recursive: true });
 
   const skillReports = [];
 
@@ -494,7 +497,7 @@ async function main() {
 
   const outputPath =
     args.outputPath ||
-    path.join(evalDir, `final-skill-benchmark-${runId}.json`);
+    path.join(resultsDir, `final-skill-benchmark-${runId}.json`);
   fs.writeFileSync(outputPath, JSON.stringify(output, null, 2));
   console.log(`Saved benchmark artifact: ${outputPath}`);
 }

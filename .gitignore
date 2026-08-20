@@ -46,5 +46,6 @@ CLAUDE.md
 # Generated files
 server.json
 
-# Eval/benchmark results
-evals/
+# Eval/benchmark run artifacts (generated).
+# The curated eval sets in evals/*.json are inputs and stay tracked.
+evals/results/
