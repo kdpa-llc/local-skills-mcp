@@ -32,15 +32,23 @@ The main MCP server class that handles client connections and manages the skill 
 #### Constructor
 
 ```typescript
-constructor();
+constructor(skillsDirs?: string[]);
 ```
 
 Creates a new LocalSkillsServer instance with the following behavior:
 
 - Initializes the MCP server with name and version from package.json
-- Creates a SkillLoader with all configured skill directories
+- Creates a SkillLoader for `skillsDirs`, defaulting to the directories
+  returned by [getAllSkillsDirectories()](#getallskillsdirectories)
 - Sets up request handlers for listing and calling tools
 - Configures error handling and graceful shutdown
+
+**Parameters:**
+
+- **skillsDirs** _(optional)_: Directories to serve skills from. Pass an
+  explicit list to serve a fixed set instead of the default locations — useful
+  for embedding the server, and for tests that must not depend on whatever the
+  host machine has in `~/.claude/skills`.
 
 **Example:**
 
@@ -49,6 +57,12 @@ import { LocalSkillsServer } from "local-skills-mcp";
 
 const server = new LocalSkillsServer();
 await server.run();
+```
+
+```typescript
+// Serve only these directories
+const scoped = new LocalSkillsServer(["/srv/team-skills"]);
+await scoped.run();
 ```
 
 #### Methods
@@ -245,7 +259,8 @@ Complete skill definition including metadata and content.
 
 ```typescript
 interface Skill {
-  name: string; // Display name from YAML frontmatter
+  name: string; // Directory name — the key get_skill accepts
+  title: string; // Display name from YAML frontmatter
   description: string; // Description from YAML frontmatter
   content: string; // Full markdown content after frontmatter
   path: string; // Absolute path to skill directory
@@ -255,7 +270,11 @@ interface Skill {
 
 **Properties:**
 
-- **name**: The skill's display name as specified in SKILL.md frontmatter
+- **name**: The skill's directory name. This is the identity: skills are
+  discovered and registered by directory name, so this is the value that can be
+  passed back to `get_skill` to fetch the same skill again.
+- **title**: The display name from SKILL.md frontmatter. Free-form, and not
+  required to match the directory name — so it is not a lookup key.
 - **description**: A brief description of the skill's purpose
 - **content**: The complete skill prompt/instructions (markdown after frontmatter)
 - **path**: Absolute filesystem path to the skill's directory
@@ -265,7 +284,8 @@ interface Skill {
 
 ```typescript
 const skill: Skill = {
-  name: "Code Reviewer",
+  name: "code-reviewer",
+  title: "Code Reviewer",
   description: "Expert code review assistant",
   content: "# Instructions\n\nYou are an expert code reviewer...",
   path: "/home/user/.claude/skills/code-reviewer",
@@ -417,6 +437,7 @@ directories the server was told to serve.
 ```markdown
 # Skill: {name}
 
+**Title:** {title}
 **Description:** {description}
 **Source:** {source}
 
@@ -424,6 +445,10 @@ directories the server was told to serve.
 
 {content}
 ```
+
+`{name}` is the skill's directory name, so it can be passed straight back to
+`get_skill`. The `**Title:**` line appears only when the frontmatter name
+differs from the directory name.
 
 **Example Request:**
 
@@ -442,8 +467,9 @@ directories the server was told to serve.
 **Example Response:**
 
 ```markdown
-# Skill: Code Reviewer
+# Skill: code-reviewer
 
+**Title:** Code Reviewer
 **Description:** Expert code review assistant
 **Source:** /home/user/.claude/skills
 
