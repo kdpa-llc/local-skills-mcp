@@ -100,14 +100,34 @@ This is the content of test skill 2.
 It provides different guidance.`
     );
 
-    // Change to temp directory so server discovers our test skills
+    // A skill whose directory name and frontmatter name deliberately disagree,
+    // so the suite exercises the name round-trip rather than assuming they match.
+    const skill3Dir = path.join(skillsDir, "session-start-hook");
+    fs.mkdirSync(skill3Dir, { recursive: true });
+    fs.writeFileSync(
+      path.join(skill3Dir, "SKILL.md"),
+      `---
+name: startup-hook-skill
+description: Third test skill whose directory and frontmatter names disagree
+---
+
+# Startup Hook Skill
+
+This skill's directory name is not its frontmatter name.`
+    );
+
+    // chdir is kept so cwd-relative behaviour matches production, but it does
+    // not steer discovery: the server is given its directories explicitly below.
     process.chdir(tempDir);
 
     // Create in-memory transport pair
     [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
 
-    // Create server
-    server = new LocalSkillsServer();
+    // Serve only the fixtures. Without this the server would resolve its
+    // directories at import time and pick up the host's ~/.claude/skills,
+    // making results depend on whatever the developer happens to have
+    // installed — which is how the get_skill name round-trip bug stayed hidden.
+    server = new LocalSkillsServer([skillsDir]);
 
     // Create client
     client = new Client(
@@ -506,7 +526,7 @@ It provides different guidance.`
           InMemoryTransport.createLinkedPair();
 
         // Create server in empty directory
-        const emptyServer = new LocalSkillsServer();
+        const emptyServer = new LocalSkillsServer([emptySkillsDir]);
         const emptyClient = new Client(
           { name: "empty-test-client", version: "1.0.0" },
           { capabilities: {} }

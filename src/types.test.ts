@@ -36,6 +36,7 @@ describe("types", () => {
     it("should allow valid skill objects", () => {
       const skill: Skill = {
         name: "code-reviewer",
+        title: "code-reviewer",
         description: "Reviews code for best practices",
         content: "Detailed skill instructions...",
         path: "/home/user/.claude/skills/code-reviewer",
@@ -52,6 +53,7 @@ describe("types", () => {
     it("should extend SkillMetadata with additional fields", () => {
       const skill: Skill = {
         name: "test",
+        title: "test",
         description: "test description",
         content: "content",
         path: "/path",
@@ -76,6 +78,7 @@ describe("types", () => {
     it("should support all required fields", () => {
       const skill: Skill = {
         name: "minimal-skill",
+        title: "minimal-skill",
         description: "minimal description",
         content: "",
         path: "",
@@ -106,6 +109,7 @@ const example = "code";
 
       const skill: Skill = {
         name: "complex-skill",
+        title: "complex-skill",
         description: "A skill with complex content",
         content: complexContent,
         path: "/skills/complex",
@@ -120,6 +124,7 @@ const example = "code";
     it("should handle special characters in paths", () => {
       const skill: Skill = {
         name: "special-path-skill",
+        title: "special-path-skill",
         description: "Skill with special path characters",
         content: "content",
         path: "/home/user/.claude/skills/my-skill",
@@ -136,6 +141,7 @@ const example = "code";
     it("should allow assigning SkillMetadata from Skill", () => {
       const skill: Skill = {
         name: "test-skill",
+        title: "test-skill",
         description: "test description",
         content: "content",
         path: "/path",
@@ -153,6 +159,7 @@ const example = "code";
       const skills: Skill[] = [
         {
           name: "skill1",
+          title: "skill1",
           description: "First skill",
           content: "content1",
           path: "/path1",
@@ -160,6 +167,7 @@ const example = "code";
         },
         {
           name: "skill2",
+          title: "skill2",
           description: "Second skill",
           content: "content2",
           path: "/path2",
@@ -180,6 +188,7 @@ const example = "code";
 
       const skill: Skill = {
         name: "mapped-skill",
+        title: "mapped-skill",
         description: "Skill in map",
         content: "content",
         path: "/path",

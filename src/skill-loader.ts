@@ -200,7 +200,8 @@ export class SkillLoader {
    * @example
    * ```typescript
    * const skill = await loader.loadSkill('code-reviewer');
-   * console.log(skill.name);        // 'Code Reviewer'
+   * console.log(skill.name);        // 'code-reviewer' (directory name, round-trips)
+   * console.log(skill.title);       // 'Code Reviewer' (frontmatter name)
    * console.log(skill.description); // 'Expert code review assistant'
    * console.log(skill.content);     // Full skill prompt content
    * console.log(skill.source);      // '/home/user/.claude/skills'
@@ -231,7 +232,10 @@ export class SkillLoader {
       const { metadata, content } = this.parseSkillFile(fileContent);
 
       const skill: Skill = {
-        name: metadata.name,
+        // The registry is keyed on directory name, so that is the identity a
+        // caller can feed back to get_skill. The frontmatter name is a label.
+        name: skillName,
+        title: metadata.name,
         description: metadata.description,
         content,
         path: skillInfo.path,
@@ -284,6 +288,32 @@ export class SkillLoader {
         `Failed to load metadata for skill "${skillName}": ${(error as Error).message}`
       );
     }
+  }
+
+  /**
+   * Resolve a skill's on-disk location without reading or parsing its file.
+   *
+   * Uses the same registry lookup as {@link loadSkill}, so a name can only ever
+   * resolve to a directory that discovery actually found. Callers that need to
+   * inspect a `SKILL.md` which may not parse — validation, for instance — can
+   * use this instead of {@link loadSkill}, which would throw on malformed
+   * frontmatter before they get the chance.
+   *
+   * @param skillName - The name of the skill to locate
+   * @returns The skill's directory and the skills directory it came from
+   * @throws {Error} If the skill is not found after a registry refresh
+   *
+   * @example
+   * ```typescript
+   * const { path, source } = await loader.getSkillLocation('code-reviewer');
+   * // path:   '/home/user/.claude/skills/code-reviewer'
+   * // source: '/home/user/.claude/skills'
+   * ```
+   */
+  async getSkillLocation(
+    skillName: string
+  ): Promise<{ path: string; source: string }> {
+    return this.resolveSkillInfo(skillName);
   }
 
   /**

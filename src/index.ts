@@ -191,14 +191,26 @@ const SKILLS_DIRS = getAllSkillsDirectories();
 export class LocalSkillsServer {
   private server: Server;
   private skillLoader: SkillLoader;
+  private skillsDirs: string[];
 
   /**
    * Creates a new LocalSkillsServer instance.
    *
    * Initializes the MCP server with capabilities, creates a SkillLoader
-   * for all configured directories, and sets up request handlers.
+   * for the given directories, and sets up request handlers.
+   *
+   * @param skillsDirs - Directories to serve skills from. Defaults to the
+   *   directories discovered at startup by {@link getAllSkillsDirectories}.
+   *   Pass an explicit list to serve a fixed set — tests use this to stay
+   *   independent of whatever the host machine has in `~/.claude/skills`.
+   *
+   * @example
+   * ```typescript
+   * const server = new LocalSkillsServer();                 // default locations
+   * const scoped = new LocalSkillsServer(['/tmp/fixtures']); // only these
+   * ```
    */
-  constructor() {
+  constructor(skillsDirs: string[] = SKILLS_DIRS) {
     this.server = new Server(
       {
         name: "local-skills-mcp",
@@ -212,7 +224,8 @@ export class LocalSkillsServer {
       }
     );
 
-    this.skillLoader = new SkillLoader(SKILLS_DIRS);
+    this.skillsDirs = skillsDirs;
+    this.skillLoader = new SkillLoader(skillsDirs);
 
     this.setupHandlers();
     this.setupErrorHandling();
@@ -263,6 +276,14 @@ export class LocalSkillsServer {
           }
         }
         getSkillDescription += `\n\nAvailable skills:\n${skillsWithDescriptions.join("\n")}`;
+      } else {
+        // Say so plainly rather than advertising expertise that is not there,
+        // and name the directories that were searched so the gap is fixable.
+        const searched =
+          this.skillsDirs.length > 0
+            ? this.skillsDirs.map((dir) => `- ${dir}`).join("\n")
+            : "- (none configured)";
+        getSkillDescription += `\n\nNo skills currently available. Check configured directories:\n${searched}`;
       }
 
       const tools: Tool[] = [
@@ -389,35 +410,15 @@ export class LocalSkillsServer {
     });
   }
 
-  private resolveSkillFilePath(skillName: string): string | null {
-    for (let i = SKILLS_DIRS.length - 1; i >= 0; i--) {
-      const baseDir = path.resolve(SKILLS_DIRS[i]);
-      const skillDir = path.resolve(baseDir, skillName);
-
-      // Only accept paths that stay strictly inside the configured directory.
-      // Without this, a skill_name such as "../../etc" would let a caller
-      // reach SKILL.md files outside every configured skills directory.
-      if (!skillDir.startsWith(baseDir + path.sep)) {
-        continue;
-      }
-
-      const candidate = path.join(skillDir, "SKILL.md");
-      if (fs.existsSync(candidate)) {
-        return candidate;
-      }
-    }
-    return null;
-  }
-
   private async handleValidateSkill(args: Record<string, unknown> | undefined) {
     const skillName = requireSkillName(args?.skill_name);
 
-    const skillFilePath = this.resolveSkillFilePath(skillName);
-    if (!skillFilePath) {
-      throw new Error(`Skill "${skillName}" not found.`);
-    }
-
-    const result = await validateSkillFile(skillFilePath);
+    // Resolve through the registry, exactly as get_skill does, so a name can
+    // only reach a skill directory that discovery actually found.
+    const location = await this.skillLoader.getSkillLocation(skillName);
+    const result = await validateSkillFile(
+      path.join(location.path, "SKILL.md")
+    );
 
     return {
       content: [
@@ -432,15 +433,12 @@ export class LocalSkillsServer {
   private async handleEvaluateSkill(args: Record<string, unknown> | undefined) {
     const skillName = requireSkillName(args?.skill_name);
 
-    const skillFilePath = this.resolveSkillFilePath(skillName);
-    if (!skillFilePath) {
-      throw new Error(`Skill "${skillName}" not found.`);
-    }
+    const location = await this.skillLoader.getSkillLocation(skillName);
 
     const result = await evaluateSkill(
       {
         skill_name: skillName,
-        skill_path: path.dirname(skillFilePath),
+        skill_path: location.path,
         eval_set_path: optionalString(args?.eval_set_path, "eval_set_path"),
         max_iterations: optionalNumber(args?.max_iterations, "max_iterations"),
         num_workers: optionalNumber(args?.num_workers, "num_workers"),
@@ -478,9 +476,13 @@ export class LocalSkillsServer {
 
     const skill = await this.skillLoader.loadSkill(skillName);
 
+    // The header carries skill.name (the directory name), which is the value
+    // that can be passed straight back to get_skill. The frontmatter name is
+    // shown separately, and only when it says something different.
     const output = [
       `# Skill: ${skill.name}`,
       ``,
+      ...(skill.title !== skill.name ? [`**Title:** ${skill.title}`] : []),
       `**Description:** ${skill.description}`,
       `**Source:** ${skill.source}`,
       ``,
@@ -525,9 +527,9 @@ export class LocalSkillsServer {
     await this.server.connect(transport);
     console.error(`Local Skills MCP Server v${VERSION} running on stdio`);
     console.error(
-      `Aggregating skills from ${SKILLS_DIRS.length} director${SKILLS_DIRS.length === 1 ? "y" : "ies"}:`
+      `Aggregating skills from ${this.skillsDirs.length} director${this.skillsDirs.length === 1 ? "y" : "ies"}:`
     );
-    SKILLS_DIRS.forEach((dir) => console.error(`  - ${dir}`));
+    this.skillsDirs.forEach((dir) => console.error(`  - ${dir}`));
   }
 
   /**

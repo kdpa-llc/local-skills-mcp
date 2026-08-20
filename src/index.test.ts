@@ -1125,6 +1125,41 @@ describe("Path traversal hardening", () => {
     expect(result.content[0].text).not.toContain("secret body");
   });
 
+  // Symlink creation needs elevated privileges on Windows.
+  it.skipIf(process.platform === "win32")(
+    "should still serve a skill whose SKILL.md is a symlink into another repo",
+    async () => {
+      // Managing skills in a dotfiles repo and symlinking them into
+      // ~/.claude/skills is a common setup; the file is a link but the skill
+      // directory is real, so discovery finds it and validation must too.
+      const skillsDir = fs.mkdtempSync(
+        path.join(os.tmpdir(), "linked-skills-")
+      );
+      try {
+        const skillDir = path.join(skillsDir, "linked");
+        fs.mkdirSync(skillDir);
+        fs.symlinkSync(
+          path.join(outsideDir, "secret", "SKILL.md"),
+          path.join(skillDir, "SKILL.md")
+        );
+
+        const { SkillLoader } = await import("./skill-loader.js");
+        const loader = new SkillLoader([skillsDir]);
+
+        const location = await loader.getSkillLocation("linked");
+        expect(location.path).toBe(skillDir);
+      } finally {
+        fs.rmSync(skillsDir, { recursive: true, force: true });
+      }
+    }
+  );
+
+  it("should treat an encoded separator as a literal name, not a traversal", () => {
+    // %2f is not a path separator at the filesystem layer, so this is just an
+    // unusual name — the registry simply has no such key.
+    expect(() => requireSkillName("..%2f..%2fsecret")).not.toThrow();
+  });
+
   it("should refuse to evaluate a skill outside the skills directories", async () => {
     server = new LocalSkillsServer();
     const mockServer = (server as any).server;
@@ -1141,13 +1176,89 @@ describe("Path traversal hardening", () => {
 
     expect(result.content[0].text).toContain("Invalid skill_name");
   });
+});
 
-  it("should not resolve a skill directory that escapes its base directory", () => {
+describe("get_skill name round-trip", () => {
+  let server: LocalSkillsServer | null = null;
+  let skillsDir = "";
+  const originalHomedir = os.homedir;
+  const originalSkillsDir = process.env.SKILLS_DIR;
+
+  beforeEach(() => {
+    skillsDir = fs.mkdtempSync(path.join(os.tmpdir(), "roundtrip-skills-"));
+    const skillPath = path.join(skillsDir, "session-start-hook");
+    fs.mkdirSync(skillPath, { recursive: true });
+    fs.writeFileSync(
+      path.join(skillPath, "SKILL.md"),
+      "---\nname: startup-hook-skill\ndescription: Directory name and frontmatter name deliberately disagree.\n---\n\nhook body\n"
+    );
+  });
+
+  afterEach(async () => {
+    if (server) {
+      await server.close();
+      server = null;
+    }
+    (os as any).homedir = originalHomedir;
+    process.env.SKILLS_DIR = originalSkillsDir;
+    await removeDir(skillsDir);
+  });
+
+  it("should return a name the caller can pass straight back to get_skill", async () => {
+    const { SkillLoader } = await import("./skill-loader.js");
     server = new LocalSkillsServer();
-    const resolve = (server as any).resolveSkillFilePath.bind(server);
+    // Point the server's loader at the fixture so the assertion does not
+    // depend on whatever skills the developer happens to have installed.
+    (server as any).skillLoader = new SkillLoader([skillsDir]);
 
-    // Bypasses requireSkillName to exercise the containment check directly.
-    expect(resolve(`../${path.basename(outsideDir)}/secret`)).toBeNull();
-    expect(resolve("..")).toBeNull();
+    const mockServer = (server as any).server;
+    const { CallToolRequestSchema } =
+      await import("@modelcontextprotocol/sdk/types.js");
+    const callToolHandler = mockServer.handlers.get(CallToolRequestSchema);
+
+    const first = await callToolHandler({
+      params: {
+        name: "get_skill",
+        arguments: { skill_name: "session-start-hook" },
+      },
+    });
+
+    const header = (first.content[0].text as string).split("\n")[0];
+    expect(header).toBe("# Skill: session-start-hook");
+    expect(first.content[0].text).toContain("**Title:** startup-hook-skill");
+
+    // Feed the returned name back in; it must resolve to the same skill.
+    const returnedName = header.replace("# Skill: ", "").trim();
+    const second = await callToolHandler({
+      params: { name: "get_skill", arguments: { skill_name: returnedName } },
+    });
+
+    expect(second.content[0].text).toBe(first.content[0].text);
+    expect(second.content[0].text).not.toContain("not found");
+  });
+
+  it("should omit the title line when it matches the directory name", async () => {
+    const matching = path.join(skillsDir, "plain-skill");
+    fs.mkdirSync(matching, { recursive: true });
+    fs.writeFileSync(
+      path.join(matching, "SKILL.md"),
+      "---\nname: plain-skill\ndescription: Directory name and frontmatter name agree here.\n---\n\nbody\n"
+    );
+
+    const { SkillLoader } = await import("./skill-loader.js");
+    server = new LocalSkillsServer();
+    (server as any).skillLoader = new SkillLoader([skillsDir]);
+
+    const mockServer = (server as any).server;
+    const { CallToolRequestSchema } =
+      await import("@modelcontextprotocol/sdk/types.js");
+    const callToolHandler = mockServer.handlers.get(CallToolRequestSchema);
+
+    const result = await callToolHandler({
+      params: { name: "get_skill", arguments: { skill_name: "plain-skill" } },
+    });
+
+    expect(result.content[0].text).toContain("# Skill: plain-skill");
+    expect(result.content[0].text).not.toContain("**Title:**");
   });
 });

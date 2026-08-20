@@ -530,4 +530,48 @@ This is the content that should not be loaded`
       );
     });
   });
+
+  describe("name round-trip", () => {
+    // The registry is keyed on directory name, so that is the only name a
+    // caller can feed back in. Returning the frontmatter name instead handed
+    // callers the one value that provably cannot fetch the skill again.
+    async function writeMismatchedSkill(dir: string) {
+      const skillPath = path.join(dir, "session-start-hook");
+      await fs.mkdir(skillPath, { recursive: true });
+      await fs.writeFile(
+        path.join(skillPath, "SKILL.md"),
+        "---\nname: startup-hook-skill\ndescription: Directory name and frontmatter name deliberately disagree.\n---\n\nhook body\n"
+      );
+    }
+
+    it("should return the directory name as the skill identity", async () => {
+      await writeMismatchedSkill(tempDir);
+      skillLoader = new SkillLoader([tempDir]);
+
+      const skill = await skillLoader.loadSkill("session-start-hook");
+
+      expect(skill.name).toBe("session-start-hook");
+      expect(skill.title).toBe("startup-hook-skill");
+    });
+
+    it("should let the returned name fetch the same skill again", async () => {
+      await writeMismatchedSkill(tempDir);
+      skillLoader = new SkillLoader([tempDir]);
+
+      const first = await skillLoader.loadSkill("session-start-hook");
+      const second = await skillLoader.loadSkill(first.name);
+
+      expect(second).toStrictEqual(first);
+    });
+
+    it("should list the directory name in discovery", async () => {
+      await writeMismatchedSkill(tempDir);
+      skillLoader = new SkillLoader([tempDir]);
+
+      const names = await skillLoader.discoverSkills();
+
+      expect(names).toContain("session-start-hook");
+      expect(names).not.toContain("startup-hook-skill");
+    });
+  });
 });
