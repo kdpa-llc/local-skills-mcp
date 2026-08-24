@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.0.1 (2026-08-24)</small>
+
+- fix(deps): regenerate the lockfile so npm ci works on Node 22 (#107) ([31bd1c1](https://github.com/kdpa-llc/local-skills-mcp/commit/31bd1c1)), closes [#107](https://github.com/kdpa-llc/local-skills-mcp/issues/107)
+
 ## 1.0.0 (2026-08-20)
 
 - feat!: signal the Node.js 22 requirement and make "!" mark a breaking change ([599a0fd](https://github.com/kdpa-llc/local-skills-mcp/commit/599a0fd)), closes [#98](https://github.com/kdpa-llc/local-skills-mcp/issues/98) [#98](https://github.com/kdpa-llc/local-skills-mcp/issues/98) [#98](https://github.com/kdpa-llc/local-skills-mcp/issues/98)
