@@ -236,12 +236,23 @@ export class LocalSkillsServer {
       console.error("[MCP Error]", error);
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    process.on("SIGINT", async () => {
-      await this.server.close();
-      process.exit(0);
-    });
+    process.on("SIGINT", this.handleSigint);
   }
+
+  /**
+   * SIGINT handler, kept as a stable reference so {@link close} can remove it.
+   *
+   * Registering an inline listener per instance leaked one listener per server
+   * that was ever constructed: nothing removed them, so a process creating
+   * several servers — every test run — walked into
+   * MaxListenersExceededWarning.
+   */
+  private readonly handleSigint = (): void => {
+    void this.close().then(
+      () => process.exit(0),
+      () => process.exit(1)
+    );
+  };
 
   private setupHandlers(): void {
     // List available tools (dynamically generated to include current skill list)
@@ -548,6 +559,9 @@ export class LocalSkillsServer {
    * ```
    */
   async close(): Promise<void> {
+    // Drop the signal handler first so repeated construct/close cycles do not
+    // accumulate listeners on the process.
+    process.off("SIGINT", this.handleSigint);
     await this.server.close();
     // Allow time for all handles to be released (important on Windows)
     await new Promise((resolve) => setTimeout(resolve, 100));

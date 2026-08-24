@@ -10,9 +10,6 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 
-// Increase max listeners to prevent warnings during tests
-process.setMaxListeners(20);
-
 /**
  * Safely remove a directory with retries for Windows file locking issues.
  * Windows can be slower to release file handles, causing EBUSY errors.

@@ -6,9 +6,6 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 
-// Increase max listeners to prevent warnings during tests
-process.setMaxListeners(20);
-
 function extractAvailableSkills(description?: string): string[] {
   if (!description) {
     return [];

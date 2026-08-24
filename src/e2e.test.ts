@@ -2,9 +2,6 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { spawn, ChildProcess } from "child_process";
 import { resolve } from "path";
 
-// Increase max listeners to prevent warnings during tests
-process.setMaxListeners(20);
-
 /**
  * End-to-End tests for Local Skills MCP Server
  *
