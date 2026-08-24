@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.0.2 (2026-08-24)</small>
+
+- fix: remove SIGINT listener on close, and collapse the duplicated changelog (#108) ([ab657dc](https://github.com/kdpa-llc/local-skills-mcp/commit/ab657dc)), closes [#108](https://github.com/kdpa-llc/local-skills-mcp/issues/108)
+
 ## <small>1.0.1 (2026-08-24)</small>
 
 - fix(deps): regenerate the lockfile so npm ci works on Node 22 (#107) ([31bd1c1](https://github.com/kdpa-llc/local-skills-mcp/commit/31bd1c1)), closes [#107](https://github.com/kdpa-llc/local-skills-mcp/issues/107)
