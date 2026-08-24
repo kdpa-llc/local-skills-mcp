@@ -248,11 +248,31 @@ export class LocalSkillsServer {
    * MaxListenersExceededWarning.
    */
   private readonly handleSigint = (): void => {
-    void this.close().then(
-      () => process.exit(0),
-      () => process.exit(1)
-    );
+    void this.shutdown();
   };
+
+  /**
+   * Close the server and set the exit status, without calling process.exit().
+   *
+   * close() removes the SIGINT listener and closes the transport, leaving
+   * nothing to hold the event loop, so the process ends on its own with this
+   * status. Forcing the exit truncates whatever else is still unwinding, and
+   * is untestable here: process.exit() inside a fire-and-forget handler
+   * escapes any spy a test installs, because the handler returns before the
+   * promise settles. Vitest then reports "process.exit unexpectedly called"
+   * and fails the run even though every test passed.
+   *
+   * Returned so callers - and tests - can await the shutdown deterministically.
+   */
+  async shutdown(): Promise<void> {
+    try {
+      await this.close();
+      process.exitCode = 0;
+    } catch (error) {
+      console.error("[MCP Error] Failed to close cleanly", error);
+      process.exitCode = 1;
+    }
+  }
 
   private setupHandlers(): void {
     // List available tools (dynamically generated to include current skill list)

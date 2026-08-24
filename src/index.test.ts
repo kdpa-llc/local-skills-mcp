@@ -815,23 +815,31 @@ This is test skill content.`
 
     const serverInternal = server as any;
     const mockServer = serverInternal.server;
+    const previousExitCode = process.exitCode;
 
-    // Find the SIGINT handler that was added
-    const sigintListeners = process.listeners("SIGINT");
-    const ourHandler = sigintListeners[sigintListeners.length - 1];
+    // shutdown() is what the SIGINT listener delegates to. Awaiting it
+    // directly makes the assertion deterministic - the listener itself is
+    // fire-and-forget, so awaiting that returns before close() settles, which
+    // is how the real process.exit() previously escaped the spy.
+    await server.shutdown();
 
-    // Mock process.exit to avoid actually exiting
-    const mockExit = vi
-      .spyOn(process, "exit")
-      .mockImplementation((() => {}) as any);
+    expect(mockServer.close).toHaveBeenCalled();
+    expect(process.exitCode).toBe(0);
 
-    // Trigger the handler
-    if (typeof ourHandler === "function") {
-      await (ourHandler as any)();
-      expect(mockServer.close).toHaveBeenCalled();
-    }
+    process.exitCode = previousExitCode;
+  });
 
-    mockExit.mockRestore();
+  it("should remove its SIGINT listener on close", async () => {
+    const before = process.listenerCount("SIGINT");
+
+    const scoped = new LocalSkillsServer();
+    expect(process.listenerCount("SIGINT")).toBe(before + 1);
+
+    await scoped.close();
+
+    // The leak this guards: one listener per constructed server, never
+    // removed, which tripped MaxListenersExceededWarning across a test run.
+    expect(process.listenerCount("SIGINT")).toBe(before);
   });
 
   it("should run the server and connect to transport", async () => {
