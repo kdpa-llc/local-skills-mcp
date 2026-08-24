@@ -28,6 +28,13 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: 'npm'
 
+      # Pin npm rather than inheriting whatever each Node bundles. Node 22
+      # ships npm 10 and Node 24 ships npm 11, and the two disagree about how
+      # to resolve a lockfile - which is how a desync stayed invisible while
+      # half this matrix was red and the release path stayed green.
+      - name: Pin npm
+        run: npm install -g npm@11
+
       - name: Install dependencies
         run: npm ci
 
@@ -70,6 +77,13 @@ jobs:
         with:
           node-version: 22
           cache: 'npm'
+
+      # Pin npm rather than inheriting whatever each Node bundles. Node 22
+      # ships npm 10 and Node 24 ships npm 11, and the two disagree about how
+      # to resolve a lockfile - which is how a desync stayed invisible while
+      # half this matrix was red and the release path stayed green.
+      - name: Pin npm
+        run: npm install -g npm@11
 
       - name: Install dependencies
         run: npm ci
