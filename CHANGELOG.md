@@ -155,25 +155,11 @@ Claude-Session: https://claude.ai/code/session_015oP5dZ2WxDSSSpMoRtbASi
 - chore(deps-dev): bump the development-dependencies group with 2 updates (#37) ([6ce77d2](https://github.com/kdpa-llc/local-skills-mcp/commit/6ce77d2)), closes [#37](https://github.com/kdpa-llc/local-skills-mcp/issues/37)
 - docs: replace hardcoded values with dynamic references (#20) ([45a8d80](https://github.com/kdpa-llc/local-skills-mcp/commit/45a8d80)), closes [#20](https://github.com/kdpa-llc/local-skills-mcp/issues/20) [#20](https://github.com/kdpa-llc/local-skills-mcp/issues/20)
 
-# Changelog
+## Earlier history
 
-All notable changes to this project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [Unreleased]
-
-### Added
-
-- Package built-in skills directory as base default for all MCP instances
-- Self-documenting capabilities: `local-skills-mcp-usage`, `local-skills-mcp-guide`, and `skill-creator` skills
-- Skills are now available immediately after installation with zero configuration
-
-### Changed
-
-- Directory aggregation priority updated to include package built-in skills as lowest priority (first in list)
-- Updated documentation to reflect new built-in skills feature
+Entries below predate semantic-release taking over this file. They are kept
+verbatim; the `[Unreleased]` block that used to sit here described the
+built-in skills feature, which shipped in 0.2.0 and is covered above.
 
 ## [0.1.0] - 2025-11-01
 

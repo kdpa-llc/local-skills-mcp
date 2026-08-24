@@ -10,9 +10,6 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 
-// Increase max listeners to prevent warnings during tests
-process.setMaxListeners(20);
-
 /**
  * Safely remove a directory with retries for Windows file locking issues.
  * Windows can be slower to release file handles, causing EBUSY errors.
@@ -818,23 +815,80 @@ This is test skill content.`
 
     const serverInternal = server as any;
     const mockServer = serverInternal.server;
+    const previousExitCode = process.exitCode;
 
-    // Find the SIGINT handler that was added
-    const sigintListeners = process.listeners("SIGINT");
-    const ourHandler = sigintListeners[sigintListeners.length - 1];
+    // shutdown() is what the SIGINT listener delegates to. Awaiting it
+    // directly makes the assertion deterministic - the listener itself is
+    // fire-and-forget, so awaiting that returns before close() settles, which
+    // is how the real process.exit() previously escaped the spy.
+    await server.shutdown();
 
-    // Mock process.exit to avoid actually exiting
-    const mockExit = vi
-      .spyOn(process, "exit")
-      .mockImplementation((() => {}) as any);
+    expect(mockServer.close).toHaveBeenCalled();
+    expect(process.exitCode).toBe(0);
 
-    // Trigger the handler
-    if (typeof ourHandler === "function") {
-      await (ourHandler as any)();
-      expect(mockServer.close).toHaveBeenCalled();
-    }
+    process.exitCode = previousExitCode;
+  });
 
-    mockExit.mockRestore();
+  it("should remove its SIGINT listener on close", async () => {
+    const before = process.listenerCount("SIGINT");
+
+    const scoped = new LocalSkillsServer();
+    expect(process.listenerCount("SIGINT")).toBe(before + 1);
+
+    await scoped.close();
+
+    // The leak this guards: one listener per constructed server, never
+    // removed, which tripped MaxListenersExceededWarning across a test run.
+    expect(process.listenerCount("SIGINT")).toBe(before);
+  });
+
+  it("should shut down when the registered SIGINT listener fires", async () => {
+    const before = process.listeners("SIGINT");
+    server = new LocalSkillsServer();
+    const previousExitCode = process.exitCode;
+
+    const serverInternal = server as any;
+    const added = process
+      .listeners("SIGINT")
+      .filter((listener) => !before.includes(listener));
+    expect(added).toHaveLength(1);
+
+    // Invoke the listener the way Node would. It returns void, so wait on the
+    // end state rather than the call: close() being invoked does not mean the
+    // shutdown finished, and the exit status is set a microtask later.
+    process.exitCode = undefined;
+    (added[0] as () => void)();
+    await vi.waitFor(() => {
+      expect(process.exitCode).toBe(0);
+    });
+
+    expect(serverInternal.server.close).toHaveBeenCalled();
+    process.exitCode = previousExitCode;
+  });
+
+  it("should report a non-zero exit status when close fails", async () => {
+    server = new LocalSkillsServer();
+
+    const serverInternal = server as any;
+    const previousExitCode = process.exitCode;
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    serverInternal.server.close = vi
+      .fn()
+      .mockRejectedValue(new Error("transport already gone"));
+
+    // shutdown() must swallow the failure rather than reject: it runs from a
+    // signal handler, where an unhandled rejection would replace a clean
+    // shutdown with a crash. The status is how the failure is reported.
+    await expect(server.shutdown()).resolves.toBeUndefined();
+
+    expect(process.exitCode).toBe(1);
+    expect(consoleErrorSpy).toHaveBeenCalled();
+
+    process.exitCode = previousExitCode;
+    consoleErrorSpy.mockRestore();
   });
 
   it("should run the server and connect to transport", async () => {

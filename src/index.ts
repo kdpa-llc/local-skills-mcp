@@ -236,11 +236,42 @@ export class LocalSkillsServer {
       console.error("[MCP Error]", error);
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    process.on("SIGINT", async () => {
-      await this.server.close();
-      process.exit(0);
-    });
+    process.on("SIGINT", this.handleSigint);
+  }
+
+  /**
+   * SIGINT handler, kept as a stable reference so {@link close} can remove it.
+   *
+   * Registering an inline listener per instance leaked one listener per server
+   * that was ever constructed: nothing removed them, so a process creating
+   * several servers — every test run — walked into
+   * MaxListenersExceededWarning.
+   */
+  private readonly handleSigint = (): void => {
+    void this.shutdown();
+  };
+
+  /**
+   * Close the server and set the exit status, without calling process.exit().
+   *
+   * close() removes the SIGINT listener and closes the transport, leaving
+   * nothing to hold the event loop, so the process ends on its own with this
+   * status. Forcing the exit truncates whatever else is still unwinding, and
+   * is untestable here: process.exit() inside a fire-and-forget handler
+   * escapes any spy a test installs, because the handler returns before the
+   * promise settles. Vitest then reports "process.exit unexpectedly called"
+   * and fails the run even though every test passed.
+   *
+   * Returned so callers - and tests - can await the shutdown deterministically.
+   */
+  async shutdown(): Promise<void> {
+    try {
+      await this.close();
+      process.exitCode = 0;
+    } catch (error) {
+      console.error("[MCP Error] Failed to close cleanly", error);
+      process.exitCode = 1;
+    }
   }
 
   private setupHandlers(): void {
@@ -548,6 +579,9 @@ export class LocalSkillsServer {
    * ```
    */
   async close(): Promise<void> {
+    // Drop the signal handler first so repeated construct/close cycles do not
+    // accumulate listeners on the process.
+    process.off("SIGINT", this.handleSigint);
     await this.server.close();
     // Allow time for all handles to be released (important on Windows)
     await new Promise((resolve) => setTimeout(resolve, 100));
