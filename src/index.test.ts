@@ -842,6 +842,55 @@ This is test skill content.`
     expect(process.listenerCount("SIGINT")).toBe(before);
   });
 
+  it("should shut down when the registered SIGINT listener fires", async () => {
+    const before = process.listeners("SIGINT");
+    server = new LocalSkillsServer();
+    const previousExitCode = process.exitCode;
+
+    const serverInternal = server as any;
+    const added = process
+      .listeners("SIGINT")
+      .filter((listener) => !before.includes(listener));
+    expect(added).toHaveLength(1);
+
+    // Invoke the listener the way Node would. It returns void, so wait on the
+    // end state rather than the call: close() being invoked does not mean the
+    // shutdown finished, and the exit status is set a microtask later.
+    process.exitCode = undefined;
+    (added[0] as () => void)();
+    await vi.waitFor(() => {
+      expect(process.exitCode).toBe(0);
+    });
+
+    expect(serverInternal.server.close).toHaveBeenCalled();
+    process.exitCode = previousExitCode;
+  });
+
+  it("should report a non-zero exit status when close fails", async () => {
+    server = new LocalSkillsServer();
+
+    const serverInternal = server as any;
+    const previousExitCode = process.exitCode;
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    serverInternal.server.close = vi
+      .fn()
+      .mockRejectedValue(new Error("transport already gone"));
+
+    // shutdown() must swallow the failure rather than reject: it runs from a
+    // signal handler, where an unhandled rejection would replace a clean
+    // shutdown with a crash. The status is how the failure is reported.
+    await expect(server.shutdown()).resolves.toBeUndefined();
+
+    expect(process.exitCode).toBe(1);
+    expect(consoleErrorSpy).toHaveBeenCalled();
+
+    process.exitCode = previousExitCode;
+    consoleErrorSpy.mockRestore();
+  });
+
   it("should run the server and connect to transport", async () => {
     server = new LocalSkillsServer();
 
