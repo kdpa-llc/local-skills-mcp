@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.0.3 (2026-08-25)</small>
+
+- docs: add CLAUDE.md and make npm test one-shot, closing #14 (#109) ([3b6ef7e](https://github.com/kdpa-llc/local-skills-mcp/commit/3b6ef7e)), closes [#14](https://github.com/kdpa-llc/local-skills-mcp/issues/14) [#109](https://github.com/kdpa-llc/local-skills-mcp/issues/109)
+
 ## <small>1.0.2 (2026-08-24)</small>
 
 - fix: remove SIGINT listener on close, and collapse the duplicated changelog (#108) ([ab657dc](https://github.com/kdpa-llc/local-skills-mcp/commit/ab657dc)), closes [#108](https://github.com/kdpa-llc/local-skills-mcp/issues/108)
