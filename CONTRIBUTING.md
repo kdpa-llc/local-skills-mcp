@@ -158,14 +158,14 @@ This project has a comprehensive test suite with unit, integration, and end-to-e
 ### Running Tests
 
 ```bash
-# Run all tests
+# Run all tests once
 npm test
 
-# Run tests in watch mode
-npm run test:ui
+# Re-run on change
+npm run test:watch
 
-# Run tests once (CI mode)
-npm run test:run
+# Interactive UI
+npm run test:ui
 
 # Run tests with coverage
 npm run test:coverage
