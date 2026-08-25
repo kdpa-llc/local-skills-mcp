@@ -77,8 +77,8 @@ npm run watch
 ### 4. Run Tests
 
 ```bash
-npm test         # Run tests in watch mode
-npm run test:run # Run tests once
+npm test           # Run all tests once
+npm run test:watch # Re-run on change
 ```
 
 ### 5. Try It Out
@@ -155,7 +155,7 @@ For active development, use watch mode:
 npm run watch
 
 # Terminal 2: Run tests in watch mode
-npm test
+npm run test:watch
 
 # Terminal 3: Run server for manual testing (optional)
 node dist/index.js
@@ -167,7 +167,7 @@ For single-run builds:
 
 ```bash
 npm run build        # Compile TypeScript
-npm run test:run     # Run all tests once
+npm test             # Run all tests once
 npm run lint         # Check code style (if configured)
 ```
 
