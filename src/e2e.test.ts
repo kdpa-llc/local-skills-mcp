@@ -1,16 +1,21 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { spawn, ChildProcess } from "child_process";
-import { resolve } from "path";
+import { resolve as resolvePath, join } from "path";
+import fs from "fs/promises";
+import os from "os";
+import { getDefaultEnvironment } from "@modelcontextprotocol/sdk/client/stdio.js";
 
 /**
  * End-to-End tests for Local Skills MCP Server
  *
- * These tests spawn the actual server binary as a subprocess and communicate
+ * These tests launch the built server through its exported explicit-directory
+ * constructor in a fixture-only subprocess and communicate
  * via stdio transport using JSON-RPC 2.0 protocol. This validates:
  * - Server startup and initialization
  * - Real stdio communication
  * - Full MCP protocol implementation
- * - Server behavior as end users would experience it
+ * - Real server behavior with deterministic skill fixtures
+ * Default CLI directory discovery and npm bin shims are separate concerns.
  */
 
 interface JsonRpcRequest {
@@ -40,11 +45,17 @@ class StdioMCPClient {
   private buffer = "";
   private requestId = 0;
 
-  async start(serverPath: string): Promise<void> {
+  async start(
+    packageRoot: string,
+    skillsDir: string,
+    fixture: string
+  ): Promise<void> {
     return new Promise((resolve, reject) => {
       // Windows-specific spawn options
       const spawnOptions: any = {
         stdio: ["pipe", "pipe", "pipe"],
+        cwd: fixture,
+        env: getDefaultEnvironment(),
       };
 
       // On Windows, hide the console window
@@ -52,7 +63,15 @@ class StdioMCPClient {
         spawnOptions.windowsHide = true;
       }
 
-      this.serverProcess = spawn("node", [serverPath], spawnOptions);
+      this.serverProcess = spawn(
+        process.execPath,
+        [
+          resolvePath(__dirname, "../scripts/fixture-server.mjs"),
+          packageRoot,
+          skillsDir,
+        ],
+        spawnOptions
+      );
 
       if (
         !this.serverProcess.stdout ||
@@ -234,15 +253,31 @@ const describeE2E = process.platform === "win32" ? describe.skip : describe;
 
 describeE2E("E2E Tests - Subprocess with Stdio Transport", () => {
   let client: StdioMCPClient;
-  const serverPath = resolve(__dirname, "../dist/index.js");
+  const packageRoot = resolvePath(__dirname, "..");
+  const fixtureName = "e2e-fixture";
+  let fixture: string;
+  let skillsDir: string;
 
   beforeEach(async () => {
+    fixture = await fs.mkdtemp(join(os.tmpdir(), "skills-e2e-"));
+    skillsDir = join(fixture, "skills");
+    await fs.mkdir(join(skillsDir, fixtureName), { recursive: true });
+    await fs.writeFile(
+      join(skillsDir, fixtureName, "SKILL.md"),
+      `---\nname: ${fixtureName}\ndescription: Use this deterministic fixture for MCP end-to-end tests.\n---\nVerified E2E fixture content.`
+    );
     client = new StdioMCPClient();
-    await client.start(serverPath);
+    await client.start(packageRoot, skillsDir, fixture);
   });
 
   afterEach(async () => {
     await client.stop();
+    await fs.rm(fixture, {
+      recursive: true,
+      force: true,
+      maxRetries: 3,
+      retryDelay: 100,
+    });
     // Wait for all file handles to be released before starting next test
     // Windows needs significantly more time for complete process cleanup
     const cleanupDelay = process.platform === "win32" ? 1000 : 100;
@@ -320,8 +355,6 @@ describeE2E("E2E Tests - Subprocess with Stdio Transport", () => {
   });
 
   describe("Tool Execution", () => {
-    let availableSkills: string[] = [];
-
     beforeEach(async () => {
       // Initialize and get available skills
       await client.sendRequest("initialize", {
@@ -338,23 +371,12 @@ describeE2E("E2E Tests - Subprocess with Stdio Transport", () => {
         (t: any) => t.name === "get_skill"
       );
 
-      if (getSkillTool && getSkillTool.description) {
-        const match = getSkillTool.description.match(
-          /Available skills: ([^\n]+)/
-        );
-        if (match) {
-          availableSkills = match[1].split(", ").map((s: string) => s.trim());
-        }
-      }
+      expect(getSkillTool).toBeDefined();
+      expect(getSkillTool.description).toContain(`- ${fixtureName}:`);
     });
 
     it("should execute get_skill tool successfully", async () => {
-      if (availableSkills.length === 0) {
-        console.log("No skills available, skipping test");
-        return;
-      }
-
-      const skillName = availableSkills[0];
+      const skillName = fixtureName;
       const result = await client.sendRequest("tools/call", {
         name: "get_skill",
         arguments: {
@@ -367,7 +389,8 @@ describeE2E("E2E Tests - Subprocess with Stdio Transport", () => {
       expect(Array.isArray(result.content)).toBe(true);
       expect(result.content.length).toBeGreaterThan(0);
       expect(result.content[0].type).toBe("text");
-      expect(result.content[0].text).toContain("---");
+      expect(result.content[0].text).toContain("Verified E2E fixture content.");
+      expect(result.content[0].text).toContain(`# Skill: ${fixtureName}`);
     });
 
     it("should return error for non-existent skill", async () => {
@@ -439,26 +462,17 @@ describeE2E("E2E Tests - Subprocess with Stdio Transport", () => {
         (t: any) => t.name === "get_skill"
       );
 
-      // Extract skill list
-      const match = getSkillTool?.description.match(
-        /Available skills: ([^\n]+)/
+      expect(getSkillTool.description).toContain(`- ${fixtureName}:`);
+      const callResult = await client.sendRequest("tools/call", {
+        name: "get_skill",
+        arguments: { skill_name: fixtureName },
+      });
+      expect(callResult.content[0].text).toContain(
+        "Verified E2E fixture content."
       );
-      const skills = match
-        ? match[1].split(", ").map((s: string) => s.trim())
-        : [];
 
-      if (skills.length > 0) {
-        // Call tool with first skill
-        const callResult = await client.sendRequest("tools/call", {
-          name: "get_skill",
-          arguments: { skill_name: skills[0] },
-        });
-        expect(callResult.content[0].type).toBe("text");
-
-        // List tools again - should still work
-        const listResult2 = await client.sendRequest("tools/list", {});
-        expect(listResult2.tools).toEqual(listResult.tools);
-      }
+      const listResult2 = await client.sendRequest("tools/list", {});
+      expect(listResult2.tools).toEqual(listResult.tools);
     });
   });
 
@@ -473,15 +487,11 @@ describeE2E("E2E Tests - Subprocess with Stdio Transport", () => {
         },
       });
 
-      try {
-        await client.sendRequest("tools/call", {
-          name: "get_skill",
-          arguments: {}, // Missing skill_name
-        });
-        expect.fail("Should have thrown an error");
-      } catch (err: any) {
-        expect(err.message).toBeDefined();
-      }
+      const result = await client.sendRequest("tools/call", {
+        name: "get_skill",
+        arguments: {},
+      });
+      expect(result.content[0].text).toMatch(/^Error: skill_name is required/);
     });
 
     it("should handle malformed skill names gracefully", async () => {

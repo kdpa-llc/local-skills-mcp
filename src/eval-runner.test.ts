@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { EventEmitter } from "events";
 import path from "path";
 
@@ -23,6 +23,8 @@ function norm(p: string): string {
 }
 
 describe("eval-runner", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
   beforeEach(() => {
     // resetAllMocks, not restoreAllMocks: as of Vitest 4 the latter only
     // restores vi.spyOn spies, so unconsumed mockReturnValueOnce queues from
@@ -32,13 +34,13 @@ describe("eval-runner", () => {
     vi.mocked(fs.existsSync).mockReturnValue(false);
     vi.mocked(spawnSync).mockReturnValue({ status: 1 } as any);
     vi.mocked(spawn).mockReturnValue(new EventEmitter() as any);
-    process.env.ANTHROPIC_API_KEY = "test-key";
+    vi.stubEnv("ANTHROPIC_API_KEY", "test-key");
   });
 
   it("reports missing dependencies", () => {
     vi.mocked(spawnSync).mockReturnValue({ status: 1 } as any);
     vi.mocked(fs.existsSync).mockReturnValue(false);
-    delete process.env.ANTHROPIC_API_KEY;
+    vi.stubEnv("ANTHROPIC_API_KEY", undefined);
 
     const result = checkEvaluatePrerequisites("/repo");
     expect(result.ok).toBe(false);
@@ -48,7 +50,7 @@ describe("eval-runner", () => {
   });
 
   it("detects the current Anthropic skill-creator run_loop layout", () => {
-    delete process.env.ANTHROPIC_API_KEY;
+    vi.stubEnv("ANTHROPIC_API_KEY", undefined);
 
     vi.mocked(spawnSync)
       .mockReturnValueOnce({ status: 0 } as any)
@@ -88,7 +90,7 @@ describe("eval-runner", () => {
   });
 
   it("requires API-key style auth in legacy run_loop layout", () => {
-    delete process.env.ANTHROPIC_API_KEY;
+    vi.stubEnv("ANTHROPIC_API_KEY", undefined);
 
     vi.mocked(spawnSync)
       .mockReturnValueOnce({ status: 0 } as any)
@@ -132,8 +134,8 @@ describe("eval-runner", () => {
     const promise = evaluateSkill(
       {
         skill_name: "skill-a",
-        skill_path: "/repo/skills/skill-a",
-        eval_set_path: "/repo/evals/skill-a.json",
+        skill_path: path.join("/repo", "skills", "skill-a"),
+        eval_set_path: path.join("/repo", "evals", "skill-a.json"),
         max_iterations: 2,
         holdout: 0.25,
         trigger_threshold: 0.7,
@@ -162,11 +164,13 @@ describe("eval-runner", () => {
 
     expect(spawn).toHaveBeenCalledWith(
       "python3",
-      expect.arrayContaining([
+      [
         "-m",
         "scripts.run_loop",
         "--skill-path",
+        path.join("/repo", "skills", "skill-a"),
         "--eval-set",
+        path.join("/repo", "evals", "skill-a.json"),
         "--model",
         "sonnet",
         "--report",
@@ -185,7 +189,7 @@ describe("eval-runner", () => {
         "override description",
         "--max-iterations",
         "2",
-      ]),
+      ],
       {
         cwd: path.join(
           "/repo",
@@ -602,7 +606,7 @@ describe("eval-runner", () => {
   });
 
   it("uses legacy script invocation path", async () => {
-    process.env.ANTHROPIC_API_KEY = "test-key";
+    vi.stubEnv("ANTHROPIC_API_KEY", "test-key");
 
     vi.mocked(spawnSync)
       .mockReturnValueOnce({ status: 0 } as any) // python3
@@ -694,7 +698,7 @@ describe("eval-runner", () => {
   });
 
   it("detects missing anthropic package in legacy layout", () => {
-    process.env.ANTHROPIC_API_KEY = "test-key";
+    vi.stubEnv("ANTHROPIC_API_KEY", "test-key");
 
     vi.mocked(spawnSync)
       .mockReturnValueOnce({ status: 0 } as any) // python3 --version
