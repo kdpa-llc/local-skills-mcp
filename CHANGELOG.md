@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.0.4 (2026-09-23)</small>
+
+- fix(deps): refresh vulnerable transitive dependencies (#110) ([d404d8f](https://github.com/kdpa-llc/local-skills-mcp/commit/d404d8f)), closes [#110](https://github.com/kdpa-llc/local-skills-mcp/issues/110)
+- test: verify packed runtime and handler boundaries (#113) ([6034896](https://github.com/kdpa-llc/local-skills-mcp/commit/6034896)), closes [#113](https://github.com/kdpa-llc/local-skills-mcp/issues/113)
+
 ## <small>1.0.3 (2026-08-25)</small>
 
 - docs: add CLAUDE.md and make npm test one-shot, closing #14 (#109) ([3b6ef7e](https://github.com/kdpa-llc/local-skills-mcp/commit/3b6ef7e)), closes [#14](https://github.com/kdpa-llc/local-skills-mcp/issues/14) [#109](https://github.com/kdpa-llc/local-skills-mcp/issues/109)
