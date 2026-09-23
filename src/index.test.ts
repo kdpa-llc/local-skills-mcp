@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+} from "@modelcontextprotocol/sdk/types.js";
+import {
   getAllSkillsDirectories,
   LocalSkillsServer,
   optionalNumber,
@@ -137,75 +141,60 @@ vi.mock("@modelcontextprotocol/sdk/server/stdio.js", () => {
 
 describe("getAllSkillsDirectories", () => {
   let originalCwd: string;
-  let originalEnv: NodeJS.ProcessEnv;
   let tempDir: string;
+  let homeSkillsExist: boolean;
+  let restoreExistsSync: () => void;
+  const homeClaudeSkills = path.join(os.homedir(), ".claude", "skills");
+  const packageSkills = path.resolve(__dirname, "..", "skills");
 
   beforeEach(() => {
     originalCwd = process.cwd();
-    originalEnv = { ...process.env };
+    vi.stubEnv("SKILLS_DIR", undefined);
 
     // Create temp directory for testing
     // Use realpathSync to resolve any symlinks (important on macOS where /var -> /private/var)
     tempDir = fs.realpathSync(
       fs.mkdtempSync(path.join(os.tmpdir(), "skills-test-"))
     );
+    process.chdir(tempDir);
+
+    // Simulate home-directory presence without inspecting its contents or
+    // changing the process home. All other paths belong to test fixtures/repo.
+    homeSkillsExist = false;
+    const existsSync = fs.existsSync;
+    const spy = vi.spyOn(fs, "existsSync").mockImplementation((target) => {
+      if (target === homeClaudeSkills) return homeSkillsExist;
+      return existsSync(target);
+    });
+    restoreExistsSync = () => spy.mockRestore();
   });
 
   afterEach(async () => {
     // Restore original state
+    restoreExistsSync();
     process.chdir(originalCwd);
-    process.env = originalEnv;
+    vi.unstubAllEnvs();
 
     // Clean up temp directory (with Windows retry logic)
     await removeDir(tempDir);
   });
 
   it("should include home .claude/skills directory if it exists", () => {
-    const homeClaudeSkills = path.join(os.homedir(), ".claude", "skills");
-
-    process.chdir(tempDir);
-    delete process.env.SKILLS_DIR;
+    homeSkillsExist = true;
 
     const dirs = getAllSkillsDirectories();
-
-    // If the home directory exists, it should be included
-    if (fs.existsSync(homeClaudeSkills)) {
-      expect(dirs).toContain(homeClaudeSkills);
-    }
-
-    expect(dirs.length).toBeGreaterThan(0);
+    expect(dirs).toEqual([packageSkills, homeClaudeSkills]);
   });
 
-  it("should create home .claude/skills and verify it is included", () => {
-    // Create a temporary home directory with .claude/skills
-    const fakeHome = path.join(tempDir, "fake-home");
-    const fakeHomeSkills = path.join(fakeHome, ".claude", "skills");
-    fs.mkdirSync(fakeHomeSkills, { recursive: true });
-
-    // Temporarily override os.homedir
-    const originalHomedir = os.homedir;
-    (os as any).homedir = () => fakeHome;
-
-    try {
-      process.chdir(tempDir);
-      delete process.env.SKILLS_DIR;
-
-      const dirs = getAllSkillsDirectories();
-
-      // Should include the fake home .claude/skills directory
-      expect(dirs).toContain(fakeHomeSkills);
-    } finally {
-      // Restore original homedir
-      (os as any).homedir = originalHomedir;
-    }
+  it("should omit home .claude/skills directory if it does not exist", () => {
+    const dirs = getAllSkillsDirectories();
+    expect(dirs).not.toContain(homeClaudeSkills);
+    expect(dirs).toEqual([packageSkills]);
   });
 
   it("should include project .claude/skills directory if it exists", () => {
     const projectClaudeSkills = path.join(tempDir, ".claude", "skills");
     fs.mkdirSync(projectClaudeSkills, { recursive: true });
-
-    process.chdir(tempDir);
-    delete process.env.SKILLS_DIR;
 
     const dirs = getAllSkillsDirectories();
     expect(dirs).toContain(projectClaudeSkills);
@@ -215,9 +204,6 @@ describe("getAllSkillsDirectories", () => {
     const defaultSkills = path.join(tempDir, "skills");
     fs.mkdirSync(defaultSkills, { recursive: true });
 
-    process.chdir(tempDir);
-    delete process.env.SKILLS_DIR;
-
     const dirs = getAllSkillsDirectories();
     expect(dirs).toContain(defaultSkills);
   });
@@ -226,8 +212,7 @@ describe("getAllSkillsDirectories", () => {
     const customSkillsDir = path.join(tempDir, "custom-skills");
     fs.mkdirSync(customSkillsDir, { recursive: true });
 
-    process.chdir(tempDir);
-    process.env.SKILLS_DIR = customSkillsDir;
+    vi.stubEnv("SKILLS_DIR", customSkillsDir);
 
     const dirs = getAllSkillsDirectories();
     expect(dirs).toContain(customSkillsDir);
@@ -238,25 +223,14 @@ describe("getAllSkillsDirectories", () => {
     const emptyDir = path.join(tempDir, "empty");
     fs.mkdirSync(emptyDir, { recursive: true });
     process.chdir(emptyDir);
-    delete process.env.SKILLS_DIR;
-
     const dirs = getAllSkillsDirectories();
 
-    // With the new implementation, package built-in skills should always be included
-    // The package skills directory should be present even when no other directories exist
-    expect(dirs.length).toBeGreaterThan(0);
-    // The package skills path should include 'skills' at the end (cross-platform check)
-    expect(
-      dirs.some((dir) => {
-        const parts = dir.split(path.sep);
-        return parts[parts.length - 1] === "skills";
-      })
-    ).toBe(true);
+    expect(dirs).toEqual([packageSkills]);
   });
 
   it("should prioritize directories correctly", () => {
     // Create all possible directories
-    const homeClaudeSkills = path.join(os.homedir(), ".claude", "skills");
+    homeSkillsExist = true;
     const projectClaudeSkills = path.join(tempDir, ".claude", "skills");
     const defaultSkills = path.join(tempDir, "skills");
     const customSkills = path.join(tempDir, "custom");
@@ -265,32 +239,51 @@ describe("getAllSkillsDirectories", () => {
     fs.mkdirSync(defaultSkills, { recursive: true });
     fs.mkdirSync(customSkills, { recursive: true });
 
-    process.chdir(tempDir);
-    process.env.SKILLS_DIR = customSkills;
+    vi.stubEnv("SKILLS_DIR", customSkills);
 
     const dirs = getAllSkillsDirectories();
+    expect(dirs).toEqual([
+      packageSkills,
+      homeClaudeSkills,
+      projectClaudeSkills,
+      defaultSkills,
+      customSkills,
+    ]);
+  });
 
-    // Check that custom SKILLS_DIR comes last (for override behavior)
-    const customIndex = dirs.indexOf(customSkills);
-    expect(customIndex).toBeGreaterThan(-1);
+  it("should use discovered defaults when no constructor directories are supplied", async () => {
+    homeSkillsExist = true;
+    const projectSkills = path.join(tempDir, "skills");
+    fs.mkdirSync(projectSkills);
 
-    // Verify all expected directories are present
-    if (fs.existsSync(homeClaudeSkills)) {
-      expect(dirs).toContain(homeClaudeSkills);
+    // Defaults are captured at module initialization. Reimport under the scoped
+    // existence stub, then inspect configuration without discovering home skills.
+    // Other tests retain their original server and SDK schema imports together.
+    vi.resetModules();
+    const { LocalSkillsServer: DefaultServer } = await import("./index.js");
+    const defaultServer = new DefaultServer();
+    try {
+      expect((defaultServer as any).skillsDirs).toEqual([
+        packageSkills,
+        homeClaudeSkills,
+        projectSkills,
+      ]);
+    } finally {
+      await defaultServer.close();
+      vi.resetModules();
     }
-    expect(dirs).toContain(projectClaudeSkills);
-    expect(dirs).toContain(defaultSkills);
-    expect(dirs).toContain(customSkills);
   });
 });
 
 describe("LocalSkillsServer", () => {
   let tempDir: string;
   let skillsDir: string;
+  let originalCwd: string;
   let server: LocalSkillsServer | null = null;
   let testName = "";
 
   beforeEach(() => {
+    originalCwd = process.cwd();
     // Capture current test name for logging
     testName = expect.getState().currentTestName || "unknown";
     console.log(`\n[beforeEach] Starting test: ${testName}`);
@@ -355,15 +348,13 @@ This is test skill content.`
     );
 
     // CRITICAL: On Windows, if cwd is inside the directory we're trying to delete, it will be locked
-    // Change to parent directory or temp root to release the lock
+    // Restore the previous directory to release the lock and isolate later tests.
     const cwd = process.cwd();
     if (cwd.startsWith(tempDir)) {
       console.log(
         `[afterEach] ⚠️ CWD is inside tempDir, changing to parent...`
       );
-      const safeCwd =
-        process.platform === "win32" ? os.tmpdir() : path.dirname(tempDir);
-      process.chdir(safeCwd);
+      process.chdir(originalCwd);
       console.log(`[afterEach] Changed CWD to: ${process.cwd()}`);
 
       // On Windows, even after changing directory, the OS needs time to release the lock
@@ -382,14 +373,14 @@ This is test skill content.`
 
   it("should create server instance successfully", () => {
     console.log(`[test] Creating LocalSkillsServer instance...`);
-    server = new LocalSkillsServer();
+    server = new LocalSkillsServer([skillsDir]);
     console.log(`[test] ✓ Server instance created`);
     expect(server).toBeDefined();
   });
 
   it("should register ListTools handler", async () => {
     console.log(`[test] Creating LocalSkillsServer instance...`);
-    server = new LocalSkillsServer();
+    server = new LocalSkillsServer([skillsDir]);
     console.log(`[test] ✓ Server instance created`);
 
     // Access the server's internal state through type assertion
@@ -400,14 +391,12 @@ This is test skill content.`
   });
 
   it("should handle ListTools request with available skills", async () => {
-    server = new LocalSkillsServer();
+    server = new LocalSkillsServer([skillsDir]);
 
     const serverInternal = server as any;
     const mockServer = serverInternal.server;
 
     // Get the ListTools handler
-    const { ListToolsRequestSchema } =
-      await import("@modelcontextprotocol/sdk/types.js");
     const listToolsHandler = mockServer.handlers.get(ListToolsRequestSchema);
 
     expect(listToolsHandler).toBeDefined();
@@ -423,11 +412,8 @@ This is test skill content.`
     expect(result.tools.some((t: any) => t.name === "evaluate_skill")).toBe(
       true
     );
-    // Should contain either test-skill or available skills message
-    expect(
-      result.tools[0].description.includes("test-skill") ||
-        result.tools[0].description.includes("Available skills")
-    ).toBe(true);
+    expect(result.tools[0].description).toContain("Available skills");
+    expect(result.tools[0].description).toContain("test-skill");
     expect(result.tools[0].inputSchema).toBeDefined();
     expect(result.tools[0].inputSchema.required).toContain("skill_name");
   });
@@ -436,211 +422,112 @@ This is test skill content.`
     // Create empty directory with no skills
     const emptyDir = path.join(tempDir, "empty");
     fs.mkdirSync(emptyDir, { recursive: true });
-    process.chdir(emptyDir);
-
-    server = new LocalSkillsServer();
+    server = new LocalSkillsServer([emptyDir]);
 
     const serverInternal = server as any;
     const mockServer = serverInternal.server;
 
-    const { ListToolsRequestSchema } =
-      await import("@modelcontextprotocol/sdk/types.js");
     const listToolsHandler = mockServer.handlers.get(ListToolsRequestSchema);
 
     const result = await listToolsHandler();
 
-    // Should contain either "No skills" message or available skills from other directories
-    expect(
-      result.tools[0].description.includes("No skills currently available") ||
-        result.tools[0].description.includes("Available skills")
-    ).toBe(true);
-
-    // Verify the tool description contains directory information
-    expect(result.tools[0].description).toContain("skills");
+    expect(result.tools[0].description).toContain(
+      "No skills currently available"
+    );
+    expect(result.tools[0].description).toContain(
+      "Check configured directories"
+    );
+    expect(result.tools[0].description).toContain(emptyDir);
   });
 
   it("should handle empty skill lists in tool description", async () => {
-    // Create a truly isolated environment for testing empty skills
     const isolatedDir = path.join(tempDir, "isolated");
     fs.mkdirSync(isolatedDir, { recursive: true });
+    server = new LocalSkillsServer([isolatedDir]);
 
-    // Save and temporarily modify HOME to avoid finding real skills
-    const originalHome = process.env.HOME;
-    const originalHomedir = os.homedir;
-    process.env.HOME = isolatedDir;
-    (os as any).homedir = () => isolatedDir;
-    process.chdir(isolatedDir);
-    delete process.env.SKILLS_DIR;
+    const mockServer = (server as any).server;
+    const listToolsHandler = mockServer.handlers.get(ListToolsRequestSchema);
+    const result = await listToolsHandler();
+    const description = result.tools[0].description;
 
-    try {
-      server = new LocalSkillsServer();
-
-      const serverInternal = server as any;
-      const mockServer = serverInternal.server;
-
-      // Get the ListTools handler and check the description
-      const { ListToolsRequestSchema } =
-        await import("@modelcontextprotocol/sdk/types.js");
-      const listToolsHandler = mockServer.handlers.get(ListToolsRequestSchema);
-      const result = await listToolsHandler();
-
-      // Should show "No skills currently available" message
-      const description = result.tools[0].description;
-
-      // Verify it contains the empty message OR available skills from elsewhere
-      expect(
-        description.includes("No skills currently available") ||
-          description.includes("Available skills")
-      ).toBe(true);
-    } finally {
-      // Restore original HOME and homedir
-      process.env.HOME = originalHome;
-      (os as any).homedir = originalHomedir;
-    }
+    expect(description).toContain("No skills currently available");
+    expect(description).toContain(isolatedDir);
   });
 
   it("should display empty skills message when no skills directories exist", async () => {
-    // Create completely isolated directory
-    const emptyDir = path.join(tempDir, "truly-empty");
-    fs.mkdirSync(emptyDir, { recursive: true });
+    server = new LocalSkillsServer([]);
+    const mockServer = (server as any).server;
+    const listToolsHandler = mockServer.handlers.get(ListToolsRequestSchema);
+    const result = await listToolsHandler();
+    const description = result.tools[0].description;
 
-    const originalHomedir = os.homedir;
-    (os as any).homedir = () => emptyDir;
-    process.chdir(emptyDir);
-    delete process.env.SKILLS_DIR;
-
-    try {
-      server = new LocalSkillsServer();
-
-      const serverInternal = server as any;
-      const mockServer = serverInternal.server;
-
-      const { ListToolsRequestSchema } =
-        await import("@modelcontextprotocol/sdk/types.js");
-      const listToolsHandler = mockServer.handlers.get(ListToolsRequestSchema);
-      const result = await listToolsHandler();
-
-      const description = result.tools[0].description;
-
-      // Should mention checking configured directories or show available skills
-      expect(
-        description.includes("Check configured directories") ||
-          description.includes("Available skills") ||
-          description.includes("No skills currently available")
-      ).toBe(true);
-    } finally {
-      (os as any).homedir = originalHomedir;
-    }
+    expect(description).toContain("No skills currently available");
+    expect(description).toContain("Check configured directories");
+    expect(description).toContain("(none configured)");
   });
 
   it("should show appropriate message based on skill availability", async () => {
-    // Create a brand new isolated temp directory structure
-    // Use realpathSync to resolve any symlinks (important on macOS where /var -> /private/var)
-    const brandNewTemp = fs.realpathSync(
-      fs.mkdtempSync(path.join(os.tmpdir(), "no-skills-test-"))
+    server = new LocalSkillsServer([skillsDir]);
+    const serverInternal = server as any;
+    const skillNames = await serverInternal.skillLoader.discoverSkills();
+    expect(skillNames).toEqual(["test-skill"]);
+
+    const listToolsHandler = serverInternal.server.handlers.get(
+      ListToolsRequestSchema
     );
-
-    try {
-      const originalHomedir = os.homedir;
-      const originalCwd = process.cwd();
-
-      // Override homedir to point to our isolated temp dir
-      (os as any).homedir = () => brandNewTemp;
-      process.chdir(brandNewTemp);
-      delete process.env.SKILLS_DIR;
-
-      server = new LocalSkillsServer();
-      const serverInternal = server as any;
-
-      // Directly test the skill loader
-      const skillLoader = serverInternal.skillLoader;
-      const skillNames = await skillLoader.discoverSkills();
-
-      // Test the ListTools handler
-      const mockServer = serverInternal.server;
-      const { ListToolsRequestSchema } =
-        await import("@modelcontextprotocol/sdk/types.js");
-      const listToolsHandler = mockServer.handlers.get(ListToolsRequestSchema);
-      const result = await listToolsHandler();
-
-      const description = result.tools[0].description;
-
-      if (skillNames.length === 0) {
-        // If no skills found, should show the "Check configured directories" message
-        expect(description).toContain("No skills currently available");
-        expect(description).toContain("Check configured directories");
-      } else {
-        // If skills found (from real directories), should list them
-        expect(description).toContain("Available skills");
-      }
-
-      // Restore
-      (os as any).homedir = originalHomedir;
-      process.chdir(originalCwd);
-    } finally {
-      // Cleanup (with Windows retry logic)
-      await removeDir(brandNewTemp);
-    }
+    const result = await listToolsHandler();
+    expect(result.tools[0].description).toContain("Available skills");
+    expect(result.tools[0].description).toContain("test-skill");
   });
 
   it("should handle CallTool request with valid skill", async () => {
-    server = new LocalSkillsServer();
+    server = new LocalSkillsServer([skillsDir]);
 
     const serverInternal = server as any;
     const mockServer = serverInternal.server;
 
     // First get available skills
-    const { ListToolsRequestSchema, CallToolRequestSchema } =
-      await import("@modelcontextprotocol/sdk/types.js");
     const listToolsHandler = mockServer.handlers.get(ListToolsRequestSchema);
     const listResult = await listToolsHandler();
 
     // Extract available skill names from description
     const description = listResult.tools[0].description;
     const match = description.match(/Available skills:\n((?:- .+\n?)+)/);
+    expect(match).not.toBeNull();
+    if (!match) throw new Error("Fixture skill was not listed");
+    const skillNames = match[1]
+      .split("\n")
+      .map((line: string) => line.replace(/^-/u, "").trim())
+      .filter(Boolean)
+      .map((line: string) => line.split(":")[0]?.trim())
+      .filter(Boolean);
+    expect(skillNames).toEqual(["test-skill"]);
 
-    if (match) {
-      const skillNames = match[1]
-        .split("\n")
-        .map((line: string) => line.replace(/^-/u, "").trim())
-        .filter(Boolean)
-        .map((line: string) => line.split(":")[0]?.trim())
-        .filter(Boolean);
+    const testSkillName = skillNames[0];
+    const callToolHandler = mockServer.handlers.get(CallToolRequestSchema);
+    expect(callToolHandler).toBeDefined();
+    const result = await callToolHandler({
+      params: {
+        name: "get_skill",
+        arguments: { skill_name: testSkillName },
+      },
+    });
 
-      const testSkillName = skillNames[0]; // Use the first available skill
-
-      const callToolHandler = mockServer.handlers.get(CallToolRequestSchema);
-      expect(callToolHandler).toBeDefined();
-
-      const result = await callToolHandler({
-        params: {
-          name: "get_skill",
-          arguments: { skill_name: testSkillName },
-        },
-      });
-
-      expect(result.content).toBeDefined();
-      expect(result.content[0].type).toBe("text");
-      const responseText = result.content[0].text;
-      expect(responseText).toContain(`# Skill: ${testSkillName}`);
-      expect(responseText).toContain("**Description:**");
-      expect(responseText).toContain("**Source:**");
-      expect(responseText).toContain("---");
-    } else {
-      // No skills available, this test should pass
-      expect(true).toBe(true);
-    }
+    expect(result.content).toBeDefined();
+    expect(result.content[0].type).toBe("text");
+    const responseText = result.content[0].text;
+    expect(responseText).toContain(`# Skill: ${testSkillName}`);
+    expect(responseText).toContain("**Description:**");
+    expect(responseText).toContain("**Source:**");
+    expect(responseText).toContain("---");
   });
 
   it("should fall back to skill name when metadata cannot be loaded", async () => {
-    server = new LocalSkillsServer();
+    server = new LocalSkillsServer([skillsDir]);
 
     const serverInternal = server as any;
     const mockServer = serverInternal.server;
     const skillLoader = serverInternal.skillLoader;
-
-    const { ListToolsRequestSchema } =
-      await import("@modelcontextprotocol/sdk/types.js");
 
     const discoverSpy = vi
       .spyOn(skillLoader, "discoverSkills")
@@ -661,14 +548,11 @@ This is test skill content.`
   });
 
   it("should truncate long skill descriptions in tool metadata", async () => {
-    server = new LocalSkillsServer();
+    server = new LocalSkillsServer([skillsDir]);
 
     const serverInternal = server as any;
     const mockServer = serverInternal.server;
     const skillLoader = serverInternal.skillLoader;
-
-    const { ListToolsRequestSchema } =
-      await import("@modelcontextprotocol/sdk/types.js");
 
     const longDescription = "A".repeat(1100);
 
@@ -704,13 +588,11 @@ This is test skill content.`
   });
 
   it("should handle CallTool with missing skill_name", async () => {
-    server = new LocalSkillsServer();
+    server = new LocalSkillsServer([skillsDir]);
 
     const serverInternal = server as any;
     const mockServer = serverInternal.server;
 
-    const { CallToolRequestSchema } =
-      await import("@modelcontextprotocol/sdk/types.js");
     const callToolHandler = mockServer.handlers.get(CallToolRequestSchema);
 
     const result = await callToolHandler({
@@ -725,13 +607,11 @@ This is test skill content.`
   });
 
   it("should handle CallTool with unknown tool name", async () => {
-    server = new LocalSkillsServer();
+    server = new LocalSkillsServer([skillsDir]);
 
     const serverInternal = server as any;
     const mockServer = serverInternal.server;
 
-    const { CallToolRequestSchema } =
-      await import("@modelcontextprotocol/sdk/types.js");
     const callToolHandler = mockServer.handlers.get(CallToolRequestSchema);
 
     const result = await callToolHandler({
@@ -746,13 +626,11 @@ This is test skill content.`
   });
 
   it("should handle CallTool with non-existent skill", async () => {
-    server = new LocalSkillsServer();
+    server = new LocalSkillsServer([skillsDir]);
 
     const serverInternal = server as any;
     const mockServer = serverInternal.server;
 
-    const { CallToolRequestSchema } =
-      await import("@modelcontextprotocol/sdk/types.js");
     const callToolHandler = mockServer.handlers.get(CallToolRequestSchema);
 
     const result = await callToolHandler({
@@ -767,7 +645,7 @@ This is test skill content.`
   });
 
   it("should set up error handler", () => {
-    server = new LocalSkillsServer();
+    server = new LocalSkillsServer([skillsDir]);
 
     const serverInternal = server as any;
     const mockServer = serverInternal.server;
@@ -778,7 +656,7 @@ This is test skill content.`
   it("should register SIGINT handler", () => {
     const listenersBefore = process.listeners("SIGINT").length;
 
-    server = new LocalSkillsServer();
+    server = new LocalSkillsServer([skillsDir]);
 
     const listenersAfter = process.listeners("SIGINT").length;
 
@@ -786,7 +664,7 @@ This is test skill content.`
   });
 
   it("should handle server errors via onerror handler", () => {
-    server = new LocalSkillsServer();
+    server = new LocalSkillsServer([skillsDir]);
 
     const serverInternal = server as any;
     const mockServer = serverInternal.server;
@@ -811,7 +689,7 @@ This is test skill content.`
   });
 
   it("should properly close server on SIGINT", async () => {
-    server = new LocalSkillsServer();
+    server = new LocalSkillsServer([skillsDir]);
 
     const serverInternal = server as any;
     const mockServer = serverInternal.server;
@@ -832,7 +710,7 @@ This is test skill content.`
   it("should remove its SIGINT listener on close", async () => {
     const before = process.listenerCount("SIGINT");
 
-    const scoped = new LocalSkillsServer();
+    const scoped = new LocalSkillsServer([skillsDir]);
     expect(process.listenerCount("SIGINT")).toBe(before + 1);
 
     await scoped.close();
@@ -844,7 +722,7 @@ This is test skill content.`
 
   it("should shut down when the registered SIGINT listener fires", async () => {
     const before = process.listeners("SIGINT");
-    server = new LocalSkillsServer();
+    server = new LocalSkillsServer([skillsDir]);
     const previousExitCode = process.exitCode;
 
     const serverInternal = server as any;
@@ -867,7 +745,7 @@ This is test skill content.`
   });
 
   it("should report a non-zero exit status when close fails", async () => {
-    server = new LocalSkillsServer();
+    server = new LocalSkillsServer([skillsDir]);
 
     const serverInternal = server as any;
     const previousExitCode = process.exitCode;
@@ -892,7 +770,7 @@ This is test skill content.`
   });
 
   it("should run the server and connect to transport", async () => {
-    server = new LocalSkillsServer();
+    server = new LocalSkillsServer([skillsDir]);
 
     const serverInternal = server as any;
     const mockServer = serverInternal.server;
@@ -923,44 +801,38 @@ This is test skill content.`
   });
 
   it("should handle validate_skill CallTool request", async () => {
-    server = new LocalSkillsServer();
+    server = new LocalSkillsServer([skillsDir]);
 
     const serverInternal = server as any;
     const mockServer = serverInternal.server;
     const skillLoader = serverInternal.skillLoader;
 
-    const { CallToolRequestSchema } =
-      await import("@modelcontextprotocol/sdk/types.js");
     const callToolHandler = mockServer.handlers.get(CallToolRequestSchema);
 
     // First discover available skills
     const skillNames = await skillLoader.discoverSkills();
+    expect(skillNames).toEqual(["test-skill"]);
+    const result = await callToolHandler({
+      params: {
+        name: "validate_skill",
+        arguments: { skill_name: skillNames[0] },
+      },
+    });
 
-    if (skillNames.length > 0) {
-      const result = await callToolHandler({
-        params: {
-          name: "validate_skill",
-          arguments: { skill_name: skillNames[0] },
-        },
-      });
-
-      expect(result.content).toBeDefined();
-      expect(result.content[0].type).toBe("text");
-      const parsed = JSON.parse(result.content[0].text);
-      expect(parsed).toHaveProperty("valid");
-      expect(parsed).toHaveProperty("errors");
-      expect(parsed).toHaveProperty("warnings");
-    }
+    expect(result.content).toBeDefined();
+    expect(result.content[0].type).toBe("text");
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed).toHaveProperty("valid");
+    expect(parsed).toHaveProperty("errors");
+    expect(parsed).toHaveProperty("warnings");
   });
 
   it("should return error for validate_skill with missing skill_name", async () => {
-    server = new LocalSkillsServer();
+    server = new LocalSkillsServer([skillsDir]);
 
     const serverInternal = server as any;
     const mockServer = serverInternal.server;
 
-    const { CallToolRequestSchema } =
-      await import("@modelcontextprotocol/sdk/types.js");
     const callToolHandler = mockServer.handlers.get(CallToolRequestSchema);
 
     const result = await callToolHandler({
@@ -975,13 +847,11 @@ This is test skill content.`
   });
 
   it("should return error for validate_skill with non-existent skill", async () => {
-    server = new LocalSkillsServer();
+    server = new LocalSkillsServer([skillsDir]);
 
     const serverInternal = server as any;
     const mockServer = serverInternal.server;
 
-    const { CallToolRequestSchema } =
-      await import("@modelcontextprotocol/sdk/types.js");
     const callToolHandler = mockServer.handlers.get(CallToolRequestSchema);
 
     const result = await callToolHandler({
@@ -996,13 +866,11 @@ This is test skill content.`
   });
 
   it("should return error for evaluate_skill with missing skill_name", async () => {
-    server = new LocalSkillsServer();
+    server = new LocalSkillsServer([skillsDir]);
 
     const serverInternal = server as any;
     const mockServer = serverInternal.server;
 
-    const { CallToolRequestSchema } =
-      await import("@modelcontextprotocol/sdk/types.js");
     const callToolHandler = mockServer.handlers.get(CallToolRequestSchema);
 
     const result = await callToolHandler({
@@ -1017,13 +885,11 @@ This is test skill content.`
   });
 
   it("should return error for evaluate_skill with non-existent skill", async () => {
-    server = new LocalSkillsServer();
+    server = new LocalSkillsServer([skillsDir]);
 
     const serverInternal = server as any;
     const mockServer = serverInternal.server;
 
-    const { CallToolRequestSchema } =
-      await import("@modelcontextprotocol/sdk/types.js");
     const callToolHandler = mockServer.handlers.get(CallToolRequestSchema);
 
     const result = await callToolHandler({
@@ -1162,10 +1028,8 @@ describe("Path traversal hardening", () => {
   });
 
   it("should refuse to validate a SKILL.md outside the skills directories", async () => {
-    server = new LocalSkillsServer();
+    server = new LocalSkillsServer([]);
     const mockServer = (server as any).server;
-    const { CallToolRequestSchema } =
-      await import("@modelcontextprotocol/sdk/types.js");
     const callToolHandler = mockServer.handlers.get(CallToolRequestSchema);
 
     const result = await callToolHandler({
@@ -1215,10 +1079,8 @@ describe("Path traversal hardening", () => {
   });
 
   it("should refuse to evaluate a skill outside the skills directories", async () => {
-    server = new LocalSkillsServer();
+    server = new LocalSkillsServer([]);
     const mockServer = (server as any).server;
-    const { CallToolRequestSchema } =
-      await import("@modelcontextprotocol/sdk/types.js");
     const callToolHandler = mockServer.handlers.get(CallToolRequestSchema);
 
     const result = await callToolHandler({
@@ -1235,8 +1097,6 @@ describe("Path traversal hardening", () => {
 describe("get_skill name round-trip", () => {
   let server: LocalSkillsServer | null = null;
   let skillsDir = "";
-  const originalHomedir = os.homedir;
-  const originalSkillsDir = process.env.SKILLS_DIR;
 
   beforeEach(() => {
     skillsDir = fs.mkdtempSync(path.join(os.tmpdir(), "roundtrip-skills-"));
@@ -1253,21 +1113,13 @@ describe("get_skill name round-trip", () => {
       await server.close();
       server = null;
     }
-    (os as any).homedir = originalHomedir;
-    process.env.SKILLS_DIR = originalSkillsDir;
     await removeDir(skillsDir);
   });
 
   it("should return a name the caller can pass straight back to get_skill", async () => {
-    const { SkillLoader } = await import("./skill-loader.js");
-    server = new LocalSkillsServer();
-    // Point the server's loader at the fixture so the assertion does not
-    // depend on whatever skills the developer happens to have installed.
-    (server as any).skillLoader = new SkillLoader([skillsDir]);
+    server = new LocalSkillsServer([skillsDir]);
 
     const mockServer = (server as any).server;
-    const { CallToolRequestSchema } =
-      await import("@modelcontextprotocol/sdk/types.js");
     const callToolHandler = mockServer.handlers.get(CallToolRequestSchema);
 
     const first = await callToolHandler({
@@ -1299,13 +1151,9 @@ describe("get_skill name round-trip", () => {
       "---\nname: plain-skill\ndescription: Directory name and frontmatter name agree here.\n---\n\nbody\n"
     );
 
-    const { SkillLoader } = await import("./skill-loader.js");
-    server = new LocalSkillsServer();
-    (server as any).skillLoader = new SkillLoader([skillsDir]);
+    server = new LocalSkillsServer([skillsDir]);
 
     const mockServer = (server as any).server;
-    const { CallToolRequestSchema } =
-      await import("@modelcontextprotocol/sdk/types.js");
     const callToolHandler = mockServer.handlers.get(CallToolRequestSchema);
 
     const result = await callToolHandler({
