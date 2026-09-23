@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.0.5 (2026-09-23)</small>
+
+- docs: fix source setup and align proxy guidance (#111) ([20b6258](https://github.com/kdpa-llc/local-skills-mcp/commit/20b6258)), closes [#111](https://github.com/kdpa-llc/local-skills-mcp/issues/111)
+
 ## <small>1.0.4 (2026-09-23)</small>
 
 - fix(deps): refresh vulnerable transitive dependencies (#110) ([d404d8f](https://github.com/kdpa-llc/local-skills-mcp/commit/d404d8f)), closes [#110](https://github.com/kdpa-llc/local-skills-mcp/issues/110)
