@@ -80,14 +80,14 @@ Choose one installation method:
 # From npm (recommended)
 npm install -g local-skills-mcp
 
-# From GitHub
-npm install -g github:kdpa-llc/local-skills-mcp
-
 # Or clone and build locally
 git clone https://github.com/kdpa-llc/local-skills-mcp.git
 cd local-skills-mcp
-npm install  # Automatically builds via prepare script
+npx --yes npm@11 ci  # Use the same npm major as CI
+npm run build  # Creates dist/index.js for the local MCP client configuration below
 ```
+
+For source builds, use a current Node.js 22 or 24 release. The build step is required: the `prepare` script only installs Git hooks.
 
 ### 2. Configure MCP Client
 
@@ -332,21 +332,16 @@ This project follows a [Code of Conduct][code-of-conduct].
 
 ### [MCP Compression Proxy][mcp-tool-aggregator]
 
-**Aggregate and compress tool descriptions from multiple MCP servers**
+**Discover and access tools from multiple MCP servers**
 
-While Local Skills MCP provides expert prompt instructions, [MCP Compression Proxy][mcp-tool-aggregator] optimizes your tool descriptions with intelligent LLM-based compression.
+While Local Skills MCP provides reusable prompt instructions, [MCP Compression Proxy][mcp-tool-aggregator] connects multiple MCP servers through one gateway. Its CLI loads selected tool schemas on demand; its native MCP mode shortens descriptions while keeping input schemas visible.
 
-**Perfect combination:**
+**Use them together:**
 
 - **Local Skills MCP** - Expert skills with lazy loading (~50 tokens/skill)
-- **MCP Compression Proxy** - Compressed tool descriptions (50-80% token reduction)
+- **MCP Compression Proxy** - Progressive tool discovery and description compression
 
-**Together they enable:**
-
-- 🎯 Maximum context efficiency across skills AND tools
-- 🔗 Access to multiple MCP servers through one connection
-- ⚡ Minimal token consumption for large-scale workflows
-- 🚀 Professional AI agent setups with hundreds of tools
+Context savings depend on your tool schemas, client mode, and task. Measure the complete tool definitions used by your own setup.
 
 [Learn more about MCP Compression Proxy →][mcp-tool-aggregator]
 
@@ -396,7 +391,7 @@ Made with ❤️ by KDPA
 [npm-types-badge]: https://img.shields.io/npm/types/local-skills-mcp
 [license-badge]: https://img.shields.io/badge/License-MIT-yellow.svg
 [license]: https://opensource.org/licenses/MIT
-[node-badge]: https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg
+[node-badge]: https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg
 [nodejs]: https://nodejs.org/
 [mcp-badge]: https://img.shields.io/badge/MCP-Compatible-purple.svg
 [mcp-protocol]: https://modelcontextprotocol.io/
