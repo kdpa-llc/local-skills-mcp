@@ -54,8 +54,8 @@ We welcome feature suggestions! Please open an issue with:
 
 ```bash
 # Clone your fork
-git clone https://github.com/YOUR_USERNAME/local-skills.git
-cd local-skills
+git clone https://github.com/YOUR_USERNAME/local-skills-mcp.git
+cd local-skills-mcp
 
 # Install dependencies
 npm install
