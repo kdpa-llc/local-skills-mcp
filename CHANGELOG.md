@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.0.6 (2026-09-23)</small>
+
+- docs: correct contributor clone path (#112) ([7593b77](https://github.com/kdpa-llc/local-skills-mcp/commit/7593b77)), closes [#112](https://github.com/kdpa-llc/local-skills-mcp/issues/112)
+
 ## <small>1.0.5 (2026-09-23)</small>
 
 - docs: fix source setup and align proxy guidance (#111) ([20b6258](https://github.com/kdpa-llc/local-skills-mcp/commit/20b6258)), closes [#111](https://github.com/kdpa-llc/local-skills-mcp/issues/111)
