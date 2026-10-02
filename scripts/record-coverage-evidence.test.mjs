@@ -181,11 +181,9 @@ test("Gitlinks and symlinks are identities, never followed", (t) => {
     "vendor/absent",
   ]);
   git(cwd, ["commit", "-qm", "gitlink"]);
-  fs.symlinkSync(
-    path.join(cwd, "nonexistent-outside"),
-    path.join(cwd, "link"),
-    "file"
-  );
+  // This disposable repository contains a real relative link on every OS.
+  git(cwd, ["config", "core.symlinks", "true"]);
+  fs.symlinkSync("nonexistent-outside", path.join(cwd, "link"), "file");
   const linkBlob = execFileSync("git", ["hash-object", "-w", "--stdin"], {
     cwd,
     input: fs.readlinkSync(path.join(cwd, "link")),
@@ -201,8 +199,7 @@ test("Gitlinks and symlinks are identities, never followed", (t) => {
   ]);
   git(cwd, ["commit", "-qm", "link"]);
   assert.match(git(cwd, ["ls-tree", "HEAD", "link"]), /^120000 blob /);
-  // Model Git for Windows' common default in this disposable fixture only.
-  git(cwd, ["config", "core.symlinks", "false"]);
+  assert.equal(fs.lstatSync(path.join(cwd, "link")).isSymbolicLink(), true);
   const source = snapshot(cwd);
   assert.equal(
     source.files.find((f) => f.path === "vendor/absent").kind,
@@ -210,6 +207,13 @@ test("Gitlinks and symlinks are identities, never followed", (t) => {
   );
   assert.equal(source.files.find((f) => f.path === "link").kind, "symlink");
   assert.equal(fs.existsSync(path.join(cwd, "vendor/absent")), false);
+  assert.equal(fs.existsSync(path.join(cwd, "nonexistent-outside")), false);
+
+  // Git's emulated link representation is not a real link and fails closed.
+  fs.unlinkSync(path.join(cwd, "link"));
+  fs.writeFileSync(path.join(cwd, "link"), "nonexistent-outside");
+  git(cwd, ["config", "core.symlinks", "false"]);
+  assert.throws(() => snapshot(cwd), /Tracked type changed/);
 });
 
 test("raw EOL bytes are distinct from clean normalized Git blobs", (t) => {
@@ -633,22 +637,89 @@ test("current pathname identity is checked before descriptor bytes", (t) => {
   assert.equal(f.closes(), 1);
 });
 
-test("descriptor stays pinned when a pathname is replaced during the read", (t) => {
+function checkPinnedReplacement(t, rename) {
   const f = readerFixture(t);
   const original = fs.readFileSync(f.target);
   const substitute = path.join(f.cwd, "substitute");
-  fs.writeFileSync(substitute, "non-secret replacement bytes");
+  const replacement = Buffer.from("non-secret replacement bytes");
+  fs.writeFileSync(substitute, replacement);
+  let denied = false;
+  let replaced = false;
   let actual;
   f.io.readFileSync = (fd) => {
-    fs.renameSync(substitute, f.target);
+    assert.equal(typeof fd, "number", "Read must use the original descriptor");
+    try {
+      rename(substitute, f.target);
+      replaced = true;
+    } catch (error) {
+      assert.equal(
+        error.code,
+        "EPERM",
+        "Only an explicit OS denial is allowed"
+      );
+      denied = true;
+      assert.deepEqual(fs.readFileSync(f.target), original);
+      assert.deepEqual(fs.readFileSync(substitute), replacement);
+    }
     actual = fs.readFileSync(fd);
     return actual;
   };
+  let result;
+  let error;
+  try {
+    result = readRegularFile(f.cwd, f.name, f.expected, f.io);
+  } catch (caught) {
+    error = caught;
+  }
+  if (denied) {
+    assert.equal(replaced, false);
+    assert.equal(error, undefined);
+    assert.deepEqual(result, original);
+    assert.deepEqual(fs.readFileSync(f.target), original);
+    assert.deepEqual(fs.readFileSync(substitute), replacement);
+  } else {
+    assert.equal(replaced, true);
+    assert.match(error?.message ?? "", /identity changed/);
+    assert.deepEqual(fs.readFileSync(f.target), replacement);
+    assert.equal(fs.existsSync(substitute), false);
+  }
+  assert.deepEqual(actual, original);
+  assert.equal(f.closes(), 1);
+}
+
+test("native replacement preserves the descriptor or is explicitly denied", (t) => {
+  checkPinnedReplacement(t, fs.renameSync);
+});
+
+test("denied replacement leaves both files and the original descriptor intact", (t) => {
+  checkPinnedReplacement(t, () => {
+    throw Object.assign(new Error("fixture overwrite denied"), {
+      code: "EPERM",
+    });
+  });
+});
+
+test("post-read pathname identity mismatch rejects original descriptor evidence", (t) => {
+  const f = readerFixture(t);
+  const original = fs.readFileSync(f.target);
+  const read = f.io.readFileSync;
+  let actual;
+  f.io.readFileSync = (fd) => {
+    actual = read(fd);
+    return actual;
+  };
+  f.io.lstatSync = (...args) => {
+    const stat = fs.lstatSync(...args);
+    return f.reads() === 0
+      ? stat
+      : { ...stat, ino: stat.ino + 1n, isFile: () => true };
+  };
   assert.throws(
     () => readRegularFile(f.cwd, f.name, f.expected, f.io),
-    /identity changed/
+    /Current file identity changed/
   );
   assert.deepEqual(actual, original);
+  assert.equal(f.reads(), 1);
   assert.equal(f.closes(), 1);
 });
 
