@@ -11,7 +11,7 @@ import {
   normalizeSource,
   prepare,
   snapshot,
-  validateReports,
+  readRegularFile,
 } from "./record-coverage-evidence.mjs";
 
 const script = fileURLToPath(
@@ -509,4 +509,250 @@ test("index link changes and output symlink traversal fail without following tar
   );
   assert.throws(() => prepare(cwd, env), /Symlink traversal/);
   assert.deepEqual(fs.readdirSync(outside), []);
+});
+
+test("regular-file substitution is rejected before reading replacement bytes", (t) => {
+  const { cwd } = fixture(t);
+  const target = path.join(cwd, "src/a.ts");
+  const replacement = path.join(cwd, "replacement");
+  const sentinel = "non-secret replacement sentinel";
+  fs.writeFileSync(replacement, sentinel);
+  const lstat = fs.lstatSync;
+  const read = fs.readFileSync;
+  let leafChecks = 0;
+  let wrongReads = 0;
+  t.mock.method(fs, "lstatSync", function (name, ...args) {
+    const stat = lstat.call(this, name, ...args);
+    if (name === target && ++leafChecks === 2) {
+      fs.renameSync(replacement, target);
+    }
+    return stat;
+  });
+  t.mock.method(fs, "readFileSync", function (...args) {
+    const bytes = read.apply(this, args);
+    if (String(bytes).includes(sentinel)) wrongReads++;
+    return bytes;
+  });
+  assert.throws(() => snapshot(cwd));
+  assert.equal(wrongReads, 0, "replacement bytes must never be read");
+});
+
+function readerFixture(t) {
+  const { cwd } = fixture(t);
+  const name = "src/a.ts";
+  const target = path.join(cwd, name);
+  const expected = fs.lstatSync(target, { bigint: true });
+  let reads = 0;
+  let closes = 0;
+  const io = {
+    ...fs,
+    readFileSync(fd) {
+      assert.equal(typeof fd, "number", "Read must use the opened descriptor");
+      reads++;
+      return fs.readFileSync(fd);
+    },
+    closeSync(fd) {
+      closes++;
+      fs.closeSync(fd);
+    },
+  };
+  return {
+    cwd,
+    name,
+    target,
+    expected,
+    io,
+    reads: () => reads,
+    closes: () => closes,
+  };
+}
+
+test("descriptor reader preserves bytes and uses supported nonblocking no-follow flags", (t) => {
+  const f = readerFixture(t);
+  let actualFlags;
+  f.io.openSync = (target, flags) => {
+    actualFlags = flags;
+    return fs.openSync(target, flags);
+  };
+  assert.deepEqual(
+    readRegularFile(f.cwd, f.name, f.expected, f.io),
+    fs.readFileSync(f.target)
+  );
+  assert.equal(
+    actualFlags,
+    fs.constants.O_RDONLY |
+      (fs.constants.O_NOFOLLOW ?? 0) |
+      (fs.constants.O_NONBLOCK ?? 0)
+  );
+  assert.equal(f.reads(), 1);
+  assert.equal(f.closes(), 1);
+});
+
+test("missing POSIX flags still reject a different opened object before reading", (t) => {
+  const f = readerFixture(t);
+  const substitute = path.join(f.cwd, "substitute");
+  fs.writeFileSync(substitute, "non-secret substitute");
+  f.io.constants = { O_RDONLY: fs.constants.O_RDONLY };
+  f.io.openSync = (_target, flags) => {
+    assert.equal(flags, fs.constants.O_RDONLY);
+    return fs.openSync(substitute, flags);
+  };
+  assert.throws(
+    () => readRegularFile(f.cwd, f.name, f.expected, f.io),
+    /Opened file identity/
+  );
+  assert.equal(f.reads(), 0);
+  assert.equal(f.closes(), 1);
+});
+
+test("nonregular descriptor and current pathname reject before reading", (t) => {
+  for (const method of ["fstatSync", "lstatSync"]) {
+    const f = readerFixture(t);
+    f.io[method] = () => ({ ...f.expected, isFile: () => false });
+    assert.throws(
+      () => readRegularFile(f.cwd, f.name, f.expected, f.io),
+      /regular file/
+    );
+    assert.equal(f.reads(), 0);
+    assert.equal(f.closes(), 1);
+  }
+});
+
+test("current pathname identity is checked before descriptor bytes", (t) => {
+  const f = readerFixture(t);
+  f.io.lstatSync = () => ({
+    ...f.expected,
+    ino: f.expected.ino + 1n,
+    isFile: () => true,
+  });
+  assert.throws(
+    () => readRegularFile(f.cwd, f.name, f.expected, f.io),
+    /Current file identity/
+  );
+  assert.equal(f.reads(), 0);
+  assert.equal(f.closes(), 1);
+});
+
+test("descriptor stays pinned when a pathname is replaced during the read", (t) => {
+  const f = readerFixture(t);
+  const original = fs.readFileSync(f.target);
+  const substitute = path.join(f.cwd, "substitute");
+  fs.writeFileSync(substitute, "non-secret replacement bytes");
+  let actual;
+  f.io.readFileSync = (fd) => {
+    fs.renameSync(substitute, f.target);
+    actual = fs.readFileSync(fd);
+    return actual;
+  };
+  assert.throws(
+    () => readRegularFile(f.cwd, f.name, f.expected, f.io),
+    /identity changed/
+  );
+  assert.deepEqual(actual, original);
+  assert.equal(f.closes(), 1);
+});
+
+test("same-object mutation during reading invalidates the evidence", (t) => {
+  const f = readerFixture(t);
+  f.io.readFileSync = (fd) => {
+    const bytes = fs.readFileSync(fd);
+    fs.appendFileSync(f.target, "changed");
+    return bytes;
+  };
+  assert.throws(
+    () => readRegularFile(f.cwd, f.name, f.expected, f.io),
+    /identity changed/
+  );
+  assert.equal(f.closes(), 1);
+});
+
+test("open, stat, read and close errors propagate with exact descriptor cleanup", (t) => {
+  for (const method of [
+    "openSync",
+    "fstatSync",
+    "lstatSync",
+    "readFileSync",
+    "closeSync",
+  ]) {
+    const f = readerFixture(t);
+    const error = new Error("fixture " + method);
+    if (method === "closeSync") {
+      const close = f.io.closeSync;
+      f.io.closeSync = (fd) => {
+        close(fd);
+        throw error;
+      };
+    } else {
+      f.io[method] = () => {
+        throw error;
+      };
+    }
+    assert.throws(
+      () => readRegularFile(f.cwd, f.name, f.expected, f.io),
+      (e) => e === error
+    );
+    assert.equal(f.closes(), method === "openSync" ? 0 : 1);
+  }
+});
+
+test("unavailable or invalid pre-open identity fails without opening", (t) => {
+  const f = readerFixture(t);
+  f.io.openSync = () => assert.fail("invalid identity must not open");
+  for (const change of [
+    { isFile: () => false },
+    { dev: undefined },
+    { dev: -1n },
+    { ino: 0n },
+    { size: -1n },
+  ]) {
+    assert.throws(() =>
+      readRegularFile(
+        f.cwd,
+        f.name,
+        { ...f.expected, isFile: () => true, ...change },
+        f.io
+      )
+    );
+  }
+  assert.equal(f.reads(), 0);
+  assert.equal(f.closes(), 0);
+});
+
+test("short descriptor reads cannot produce accepted evidence", (t) => {
+  const f = readerFixture(t);
+  f.io.readFileSync = () => Buffer.from("short");
+  assert.throws(
+    () => readRegularFile(f.cwd, f.name, f.expected, f.io),
+    /File size changed/
+  );
+  assert.equal(f.closes(), 1);
+});
+
+test("real leaf symlink swaps never read their targets with or without POSIX flags", (t) => {
+  for (const constants of [fs.constants, { O_RDONLY: fs.constants.O_RDONLY }]) {
+    const f = readerFixture(t);
+    const substitute = path.join(f.cwd, "substitute");
+    fs.writeFileSync(substitute, "non-secret link target");
+    f.io.constants = constants;
+    f.io.openSync = (target, flags) => {
+      fs.unlinkSync(target);
+      fs.symlinkSync(substitute, target, "file");
+      return fs.openSync(target, flags);
+    };
+    assert.throws(() => readRegularFile(f.cwd, f.name, f.expected, f.io));
+    assert.equal(f.reads(), 0, "symlink target bytes must never be read");
+    assert.equal(f.closes(), constants.O_NOFOLLOW ? 0 : 1);
+  }
+});
+
+test("missing pathname after open is rejected before reading", (t) => {
+  const f = readerFixture(t);
+  f.io.openSync = (target, flags) => {
+    const fd = fs.openSync(target, flags);
+    fs.unlinkSync(target);
+    return fd;
+  };
+  assert.throws(() => readRegularFile(f.cwd, f.name, f.expected, f.io));
+  assert.equal(f.reads(), 0);
+  assert.equal(f.closes(), 1);
 });

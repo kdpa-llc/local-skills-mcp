@@ -51,6 +51,52 @@ function writeJson(cwd, relative, value) {
   fs.writeFileSync(target, JSON.stringify(value, null, 2) + "\n");
 }
 
+function regularIdentity(stat) {
+  assert.ok(stat.isFile(), "Expected a regular file");
+  const fields = ["dev", "ino", "size", "mtimeNs", "ctimeNs"];
+  for (const key of fields)
+    assert.equal(typeof stat[key], "bigint", "Unavailable file identity");
+  assert.ok(
+    stat.dev >= 0n && stat.ino > 0n && stat.size >= 0n,
+    "Invalid file identity"
+  );
+  return fields.map((key) => stat[key]);
+}
+
+// The adapter permits deterministic platform/error tests; snapshot always uses fs.
+export function readRegularFile(cwd, name, expected, io = fs) {
+  const identity = regularIdentity(expected);
+  const target = localPath(cwd, name);
+  // Windows does not expose these POSIX flags. Descriptor identity is checked
+  // before bytes on every platform; this is not atomic ancestor traversal.
+  const flags =
+    io.constants.O_RDONLY |
+    (io.constants.O_NOFOLLOW ?? 0) |
+    (io.constants.O_NONBLOCK ?? 0);
+  const fd = io.openSync(target, flags);
+  try {
+    const validate = () => {
+      assert.deepEqual(
+        regularIdentity(io.fstatSync(fd, { bigint: true })),
+        identity,
+        "Opened file identity changed"
+      );
+      assert.deepEqual(
+        regularIdentity(io.lstatSync(localPath(cwd, name), { bigint: true })),
+        identity,
+        "Current file identity changed"
+      );
+    };
+    validate();
+    const bytes = io.readFileSync(fd);
+    validate();
+    assert.equal(BigInt(bytes.length), expected.size, "File size changed");
+    return bytes;
+  } finally {
+    io.closeSync(fd);
+  }
+}
+
 export function snapshot(cwd) {
   const commit = git(cwd, ["rev-parse", "HEAD"]);
   const headers = git(cwd, ["cat-file", "-p", "HEAD"])
@@ -79,7 +125,7 @@ export function snapshot(cwd) {
       "Unsupported tracked mode"
     );
     const target = localPath(cwd, name, mode === "120000");
-    const stat = fs.lstatSync(target);
+    const stat = fs.lstatSync(target, { bigint: true });
     assert.ok(
       mode === "120000" ? stat.isSymbolicLink() : stat.isFile(),
       "Tracked type changed"
@@ -87,7 +133,7 @@ export function snapshot(cwd) {
     const bytes =
       mode === "120000"
         ? fs.readlinkSync(target, { encoding: "buffer" })
-        : fs.readFileSync(target);
+        : readRegularFile(cwd, name, stat);
     hash
       .update(mode === "120000" ? "symlink\0" : "")
       .update(name)
