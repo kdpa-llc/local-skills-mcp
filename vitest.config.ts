@@ -16,7 +16,7 @@ export default defineConfig({
     hookTimeout: 60000, // 60 seconds for setup/teardown hooks on slower CI environments
     coverage: {
       provider: "v8",
-      reporter: ["text", "json", "html", "lcov"],
+      reporter: ["text", "json", "json-summary", "html", "lcov"],
       include: ["src/**/*.ts"],
       exclude: [
         "src/**/*.test.ts",
