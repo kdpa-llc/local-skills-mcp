@@ -50,8 +50,28 @@ jobs:
       - name: Run type check
         run: npm run typecheck
 
+      - name: Create helper diagnostics directory
+        run: >-
+          node -e "require('node:fs').mkdirSync('coverage/helper-diagnostics', {recursive: true})"
+
       - name: Verify coverage evidence helper
-        run: node --test scripts/record-coverage-evidence.test.mjs
+        id: coverage_helper
+        run: >-
+          node --test
+          --test-reporter=spec --test-reporter-destination=stdout
+          --test-reporter=./scripts/coverage-helper-reporter.mjs
+          --test-reporter-destination=coverage/helper-diagnostics/results.json
+          scripts/record-coverage-evidence.test.mjs
+          scripts/coverage-helper-reporter.test.mjs
+
+      - name: Archive helper diagnostics
+        if: ${{ !cancelled() && (steps.coverage_helper.outcome == 'success' || steps.coverage_helper.outcome == 'failure') }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: helper-tests-${{ matrix.os }}-node-${{ matrix.node }}-attempt-${{ github.run_attempt }}
+          path: coverage/helper-diagnostics/results.json
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Prepare coverage evidence
         id: coverage_prepare
