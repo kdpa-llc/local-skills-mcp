@@ -1,3 +1,5 @@
+import { createRequire } from "node:module";
+import { pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
 import { parse, normalize, equal } from "fast-uri";
 import { Address4, Address6, AddressError } from "ip-address";
@@ -136,5 +138,214 @@ describe("Bounded IPv6 parsing diagnostics", () => {
       expect((error as AddressError).parseMessage).toBeUndefined();
     }
     expect(Address6.isValid(address)).toBe(false);
+  });
+});
+
+type MarkdownToken = {
+  type: string;
+  children: MarkdownToken[] | null;
+};
+type MarkdownRenderer = {
+  render(source: string): string;
+  validateLink(url: string): boolean;
+  helpers: {
+    parseLinkDestination(
+      source: string,
+      start: number,
+      end: number
+    ): { ok: boolean; pos: number; str: string };
+  };
+  core: {
+    ruler: {
+      before(
+        before: string,
+        name: string,
+        rule: (state: { tokens: MarkdownToken[] }) => void
+      ): void;
+    };
+  };
+};
+type MarkdownFactory = new (
+  options: Record<string, boolean>
+) => MarkdownRenderer;
+
+const dependencyRequire = createRequire(import.meta.url);
+const MarkdownCjs = dependencyRequire("markdown-it") as MarkdownFactory;
+const markdownEsmUrl = pathToFileURL(
+  dependencyRequire.resolve("markdown-it/index.mjs")
+).href;
+const { default: MarkdownEsm } = (await import(markdownEsmUrl)) as {
+  default: MarkdownFactory;
+};
+const inlineRuleUrl = pathToFileURL(
+  dependencyRequire.resolve("markdown-it/lib/rules_inline/linkify.mjs")
+).href;
+const { default: inlineLinkify } = (await import(inlineRuleUrl)) as {
+  default: (state: Record<string, unknown>, silent: boolean) => boolean;
+};
+const docsOptions = { html: true, linkify: true };
+
+// Tiny deterministic work counters exercise the affected parser rules. They
+// neither patch global prototypes nor claim whole-parser timing guarantees.
+describe("Bounded Markdown linkification", () => {
+  it("bounds child-array reconstruction while preserving soft-break emails", () => {
+    const measurements = [8, 16].map((count) => {
+      const md = new MarkdownEsm(docsOptions);
+      let rewrittenChildren = 0;
+      let finalChildren: MarkdownToken[] = [];
+      md.core.ruler.before("linkify", "count-child-reconstruction", (state) => {
+        for (const token of state.tokens) {
+          if (token.type !== "inline" || !token.children) continue;
+          let children = token.children;
+          finalChildren = children;
+          Object.defineProperty(token, "children", {
+            configurable: true,
+            get: () => children,
+            set: (next: MarkdownToken[]) => {
+              rewrittenChildren += next.length;
+              children = next;
+              finalChildren = next;
+            },
+          });
+        }
+      });
+      const rendered = md.render("a@b.co\n".repeat(count));
+      expect(rendered.match(/href="mailto:a@b.co"/g)).toHaveLength(count);
+      expect(rendered.match(/\n/g)).toHaveLength(count);
+      return {
+        count,
+        rewrittenChildren,
+        budget: 2 * finalChildren.length,
+      };
+    });
+    console.info("markdown-child-work", JSON.stringify(measurements));
+    for (const result of measurements) {
+      expect(result.rewrittenChildren).toBeLessThanOrEqual(result.budget);
+    }
+  });
+
+  it("bounds scheme inspection without accepting an unregistered scheme", () => {
+    const measurements = [8, 16].map((count) => {
+      const text = "a://".repeat(count);
+      const md = new MarkdownEsm(docsOptions);
+      let inspectedCharacters = 0;
+      for (let index = 0; index < count; index++) {
+        const position = index * 4 + 1;
+        const prefix = text.slice(0, position);
+        const state: Record<string, unknown> = {
+          md,
+          pos: position,
+          posMax: text.length,
+          linkLevel: 0,
+          src: {
+            charCodeAt(at: number) {
+              inspectedCharacters++;
+              return text.charCodeAt(at);
+            },
+            slice(start: number, end?: number) {
+              return text.slice(start, end);
+            },
+          },
+          pending: {
+            length: prefix.length,
+            match(pattern: RegExp) {
+              inspectedCharacters += prefix.length;
+              return prefix.match(pattern);
+            },
+          },
+        };
+        expect(inlineLinkify(state, false)).toBe(false);
+        expect(state.pos).toBe(position);
+      }
+      return { count, inspectedCharacters, budget: 16 * count };
+    });
+    console.info("markdown-scheme-work", JSON.stringify(measurements));
+    for (const result of measurements) {
+      expect(result.inspectedCharacters).toBeLessThanOrEqual(result.budget);
+    }
+  });
+
+  it("preserves actual ESM and CommonJS rendering with TypeDoc defaults", () => {
+    const input = "hello a@b.co\nok a@b.co\n\na://a://\n";
+    const expected =
+      '<p>hello <a href="mailto:a@b.co">a@b.co</a>\n' +
+      'ok <a href="mailto:a@b.co">a@b.co</a></p>\n' +
+      "<p>a://a://</p>\n";
+    for (const Factory of [MarkdownEsm, MarkdownCjs]) {
+      expect(new Factory(docsOptions).render(input)).toBe(expected);
+    }
+  });
+
+  it("preserves explicit links when automatic linkification is disabled", () => {
+    for (const Factory of [MarkdownEsm, MarkdownCjs]) {
+      const md = new Factory({ html: true, linkify: false });
+      expect(md.render("a@b.co a:// [ok](https://example.com)\n")).toBe(
+        '<p>a@b.co a:// <a href="https://example.com">ok</a></p>\n'
+      );
+    }
+  });
+
+  it("rejects unsafe destinations while retaining ordinary HTTPS links", () => {
+    for (const Factory of [MarkdownEsm, MarkdownCjs]) {
+      const md = new Factory(docsOptions);
+      expect(md.validateLink("javascript:alert(1)")).toBe(false);
+      expect(md.validateLink("data:text/html,example")).toBe(false);
+      expect(md.validateLink("https://example.com")).toBe(true);
+      const rendered = md.render(
+        "[bad](javascript:alert(1)) [data](data:text/html,example) https://example.com\n"
+      );
+      expect(rendered).not.toMatch(/href="(?:javascript:|data:)/);
+      expect(rendered).toContain('href="https://example.com"');
+    }
+  });
+
+  it("retains the backslash before a link destination's space separator", () => {
+    for (const Factory of [MarkdownEsm, MarkdownCjs]) {
+      const md = new Factory(docsOptions);
+      const destination = "foo\\ bar";
+      expect(
+        md.helpers.parseLinkDestination(destination, 0, destination.length)
+      ).toMatchObject({ ok: true, pos: 4, str: "foo\\" });
+      expect(md.render('[x](foo\\ "title")\n')).toBe(
+        '<p><a href="foo%5C" title="title">x</a></p>\n'
+      );
+      expect(md.render('[x](https://example.com "title")\n')).toBe(
+        '<p><a href="https://example.com" title="title">x</a></p>\n'
+      );
+    }
+  });
+
+  it("recognizes lowercase declarations with HTML enabled and escapes them otherwise", () => {
+    for (const Factory of [MarkdownEsm, MarkdownCjs]) {
+      const md = new Factory(docsOptions);
+      expect(md.render("<!doctype html>\n\nnext\n")).toBe(
+        "<!doctype html>\n<p>next</p>\n"
+      );
+      expect(md.render("<!DOCTYPE html>\n\nnext\n")).toBe(
+        "<!DOCTYPE html>\n<p>next</p>\n"
+      );
+      expect(
+        new Factory({ html: false, linkify: true }).render("<!doctype html>\n")
+      ).toBe("<p>&lt;!doctype html&gt;</p>\n");
+    }
+  });
+
+  it("preserves standard schemes, delimiters and escaped link text", () => {
+    for (const Factory of [MarkdownEsm, MarkdownCjs]) {
+      const md = new Factory(docsOptions);
+      expect(
+        md.render("http://example.com https://example.com ftp://example.com\n")
+      ).toBe(
+        '<p><a href="http://example.com">http://example.com</a> ' +
+          '<a href="https://example.com">https://example.com</a> ' +
+          '<a href="ftp://example.com">ftp://example.com</a></p>\n'
+      );
+      expect(md.render("(https://example.com),\n")).toBe(
+        '<p>(<a href="https://example.com">https://example.com</a>),</p>\n'
+      );
+      expect(md.render("[a\\*b](https://example.com)\n")).toBe(
+        '<p><a href="https://example.com">a*b</a></p>\n'
+      );
+    }
   });
 });
