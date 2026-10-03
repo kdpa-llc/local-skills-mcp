@@ -50,7 +50,22 @@ jobs:
       - name: Run type check
         run: npm run typecheck
 
+      - name: Verify coverage evidence helper
+        run: node --test scripts/record-coverage-evidence.test.mjs
+
+      - name: Prepare coverage evidence
+        id: coverage_prepare
+        env:
+          COVERAGE_OS: ${{ matrix.os }}
+          COVERAGE_NODE: ${{ matrix.node }}
+          COVERAGE_BASE: ${{ github.event.pull_request.base.sha }}
+          COVERAGE_PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          COVERAGE_BEFORE: ${{ github.event.before }}
+          COVERAGE_AFTER: ${{ github.event.after }}
+        run: node scripts/record-coverage-evidence.mjs prepare
+
       - name: Run tests with coverage
+        id: coverage
         run: npm run test:coverage
 
       - name: Upload coverage to Codecov
@@ -62,6 +77,31 @@ jobs:
           name: codecov-umbrella
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Finalize coverage evidence
+        if: ${{ !cancelled() && steps.coverage_prepare.outcome == 'success' && (steps.coverage.outcome == 'success' || steps.coverage.outcome == 'failure') }}
+        env:
+          COVERAGE_OS: ${{ matrix.os }}
+          COVERAGE_NODE: ${{ matrix.node }}
+          COVERAGE_BASE: ${{ github.event.pull_request.base.sha }}
+          COVERAGE_PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          COVERAGE_BEFORE: ${{ github.event.before }}
+          COVERAGE_AFTER: ${{ github.event.after }}
+          COVERAGE_TEST_OUTCOME: ${{ steps.coverage.outcome }}
+        run: node scripts/record-coverage-evidence.mjs finalize
+
+      - name: Archive coverage evidence
+        if: ${{ always() && steps.coverage_prepare.outcome == 'success' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-${{ matrix.os }}-node-${{ matrix.node }}-attempt-${{ github.run_attempt }}
+          path: |
+            coverage/coverage-final.json
+            coverage/coverage-summary.json
+            coverage/evidence/source-before.json
+            coverage/evidence/provenance.json
+          if-no-files-found: error
+          retention-days: 14
 
   build:
     name: Build
