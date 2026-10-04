@@ -436,6 +436,7 @@ describe("Actual minimatch brace consumer", () => {
 
 type RetryOptions = {
   method: string;
+  body?: import("node:stream").Readable;
   headers?: Record<string, string>;
   retryOptions: {
     maxRetries?: number;
@@ -476,7 +477,18 @@ const NestedRetryHandler = actionsRequire(
   "undici/lib/handler/retry-handler.js"
 ) as new (options: RetryOptions, handlers: RetryHandlers) => RetryFixture;
 
-function retryFixture(method = "GET", retries = true) {
+const { Readable: FixtureReadable } = dependencyRequire(
+  "node:stream"
+) as typeof import("node:stream");
+const { RequestRetryError: NestedRequestRetryError } = actionsRequire(
+  "undici/lib/core/errors.js"
+) as { RequestRetryError: typeof Error };
+
+function retryFixture(
+  method = "GET",
+  retries = true,
+  body?: import("node:stream").Readable
+) {
   const requests: RetryOptions[] = [];
   const statuses: number[] = [];
   const chunks: Buffer[] = [];
@@ -487,6 +499,7 @@ function retryFixture(method = "GET", retries = true) {
   const retry = new NestedRetryHandler(
     {
       method,
+      body,
       retryOptions: retries
         ? { retry: (_error, _context, callback) => callback() }
         : { maxRetries: 0 },
@@ -578,6 +591,8 @@ describe("Nested Undici retry framing", () => {
       expect(accepted).toBe(false);
       expect(f.aborts).toHaveLength(1);
       expect(f.aborts[0]?.message).toMatch(/Content-Range mismatch/);
+      expect(f.aborts[0]).toBeInstanceOf(NestedRequestRetryError);
+      expect(f.aborts[0]).toMatchObject({ code: "UND_ERR_REQ_RETRY" });
       expect(f.statuses).toEqual([status]);
       expect(f.body()).toBe("a");
     }
@@ -653,9 +668,26 @@ describe("Nested Undici retry framing", () => {
       }).not.toThrow();
       expect(f.aborts).toHaveLength(1);
       expect(f.aborts[0]?.message).toMatch(/Content-Range mismatch/);
+      expect(f.aborts[0]).toBeInstanceOf(NestedRequestRetryError);
+      expect(f.aborts[0]).toMatchObject({ code: "UND_ERR_REQ_RETRY" });
       expect(f.body()).toBe("a");
     }
   );
+
+  it("does not replay an already consumed in-memory request body", () => {
+    const body = FixtureReadable.from([Buffer.from("a")]);
+    try {
+      expect(body.read()?.toString()).toBe("a");
+      expect(FixtureReadable.isDisturbed(body)).toBe(true);
+      const f = retryFixture("POST", true, body);
+      const error = socketFailure();
+      f.retry.onError(error);
+      expect(f.requests).toEqual([]);
+      expect(f.errors).toEqual([error]);
+    } finally {
+      body.destroy();
+    }
+  });
 
   it("preserves cancellation and configured zero-retry controls", () => {
     const cancelled = retryFixture();
