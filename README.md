@@ -51,12 +51,13 @@ Transform AI capabilities with structured, expert-level instructions for special
 
 ### 🆚 Why Use Local Skills MCP?
 
-| Feature           | Local Skills MCP                | Built-in Claude Skills   |
-| ----------------- | ------------------------------- | ------------------------ |
-| **Portability**   | Any MCP client                  | Claude Code only         |
-| **Storage**       | Multiple directories aggregated | `~/.claude/skills/` only |
-| **Invocation**    | Explicit via MCP tool           | Auto-invoked by Claude   |
-| **Context Usage** | Lazy loading (names only)       | All skills in context    |
+Use Local Skills MCP when you want an MCP interface to a local skill library:
+
+- **Reuse a library across clients** — connect MCP clients that support launching a local stdio server.
+- **Combine skill directories** — aggregate built-in, personal, project, and custom sources with the [documented override order](#-quick-start).
+- **Request a skill explicitly** — call `get_skill` to retrieve instructions for the selected skill.
+
+[Claude Agent Skills](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview) also use progressive disclosure: metadata loads first, and instructions load when needed. Local Skills MCP focuses on exposing your local skill library through MCP.
 
 ## ✨ Features
 
