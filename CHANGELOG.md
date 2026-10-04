@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.0.7 (2026-10-04)</small>
+
+- fix(ci): bind coverage source reads to file descriptors ([52b4d6e](https://github.com/kdpa-llc/local-skills-mcp/commit/52b4d6e))
+- fix(deps): patch markdown-it linkification ([d4b1f85](https://github.com/kdpa-llc/local-skills-mcp/commit/d4b1f85))
+- fix(deps): patch URI host and IP address advisories ([e9e6d43](https://github.com/kdpa-llc/local-skills-mcp/commit/e9e6d43))
+- fix(deps): patch URI parsing and address classification ([fab96ea](https://github.com/kdpa-llc/local-skills-mcp/commit/fab96ea))
+- fix(deps): patch vulnerable undici development dependency ([108a70a](https://github.com/kdpa-llc/local-skills-mcp/commit/108a70a))
+- test(ci): make coverage fixtures portable and remove diagnostics ([58af80a](https://github.com/kdpa-llc/local-skills-mcp/commit/58af80a))
+- ci: retain bounded helper failure diagnostics ([da556ff](https://github.com/kdpa-llc/local-skills-mcp/commit/da556ff))
+- ci: retain source-bound coverage evidence ([2bed2d4](https://github.com/kdpa-llc/local-skills-mcp/commit/2bed2d4))
+
 ## <small>1.0.6 (2026-09-23)</small>
 
 - docs: correct contributor clone path (#112) ([7593b77](https://github.com/kdpa-llc/local-skills-mcp/commit/7593b77)), closes [#112](https://github.com/kdpa-llc/local-skills-mcp/issues/112)
