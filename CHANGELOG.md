@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.0.8 (2026-11-02)</small>
+
+- fix(deps): update SDK and vulnerable transitive packages (#117) ([5d40713](https://github.com/kdpa-llc/local-skills-mcp/commit/5d40713)), closes [#117](https://github.com/kdpa-llc/local-skills-mcp/issues/117)
+
 ## <small>1.0.7 (2026-10-04)</small>
 
 - fix(ci): bind coverage source reads to file descriptors ([52b4d6e](https://github.com/kdpa-llc/local-skills-mcp/commit/52b4d6e))
