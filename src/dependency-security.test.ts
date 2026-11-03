@@ -804,3 +804,286 @@ describe("Nested Undici event-stream compatibility", () => {
     }
   });
 });
+
+// Keep these inputs small. The actual nested Actions dependency handles all
+// parsing and dispatch, while fixture dispatchers never open a socket.
+const { EventEmitter: FixtureEventEmitter } = dependencyRequire(
+  "node:events"
+) as typeof import("node:events");
+const NestedAgent = actionsRequire("undici/lib/dispatcher/agent.js") as new (
+  options: Record<string, unknown>
+) => {
+  dispatch(options: Record<string, unknown>, handler: object): boolean;
+  destroy(): Promise<void>;
+};
+
+describe("Nested Undici Agent TLS options", () => {
+  it("preserves certificate validation callbacks and CA bytes for its factory", async () => {
+    const checkServerIdentity = () => new Error("fixture certificate rejected");
+    const ca = Buffer.from("fixture CA bytes");
+    const tls = { checkServerIdentity, ca, rejectUnauthorized: true };
+    let received: Record<string, unknown> | undefined;
+    class FixtureDispatcher extends FixtureEventEmitter {
+      dispatch() {
+        return true;
+      }
+      destroy() {
+        return Promise.resolve();
+      }
+    }
+    const agent = new NestedAgent({
+      tls,
+      factory(_origin: string, options: Record<string, unknown>) {
+        received = options;
+        return new FixtureDispatcher();
+      },
+    });
+    try {
+      expect(
+        agent.dispatch(
+          { origin: "https://fixture.invalid", path: "/", method: "GET" },
+          {}
+        )
+      ).toBe(true);
+      expect(received?.tls).toEqual(tls);
+      expect(received?.tls).not.toBe(tls);
+      const forwarded = received?.tls as typeof tls;
+      expect(forwarded.checkServerIdentity).toBe(checkServerIdentity);
+      expect(forwarded.ca).toBe(ca);
+      expect(forwarded.checkServerIdentity()?.message).toBe(
+        "fixture certificate rejected"
+      );
+    } finally {
+      await agent.destroy();
+    }
+  });
+});
+
+type BoundedEventParser = {
+  _transform(
+    chunk: Buffer,
+    encoding: string,
+    done: (error?: Error) => void
+  ): void;
+  destroy(): void;
+};
+const BoundedEventSourceStream =
+  NestedEventSourceStream as unknown as new (options: {
+    maxEventSize: number;
+    eventSourceSettings: StreamState;
+    push: (event: StreamEvent) => boolean;
+  }) => BoundedEventParser;
+
+function boundedEventFixture(maxEventSize: number) {
+  const events: StreamEvent[] = [];
+  const parser = new BoundedEventSourceStream({
+    maxEventSize,
+    eventSourceSettings: {
+      origin: "https://fixture.invalid",
+      lastEventId: "",
+      reconnectionTime: 0,
+    },
+    push(event) {
+      events.push(event);
+      return true;
+    },
+  });
+  return {
+    parser,
+    events,
+    feed(text: string) {
+      let result: Error | undefined;
+      let callbacks = 0;
+      parser._transform(Buffer.from(text), "buffer", (error) => {
+        callbacks++;
+        result = error;
+      });
+      expect(callbacks).toBe(1);
+      return result;
+    },
+  };
+}
+
+describe("Nested Undici bounded EventSource events", () => {
+  it("accepts the byte limit and resets it after each dispatched event", () => {
+    const f = boundedEventFixture(4);
+    try {
+      expect(f.feed("data: café\n\n")).toMatchObject({
+        message: "EventSource message size exceeded",
+        aborted: false,
+      });
+      expect(f.events).toEqual([]);
+    } finally {
+      f.parser.destroy();
+    }
+    const valid = boundedEventFixture(4);
+    try {
+      expect(valid.feed("data: abcd\n\ndata: cafe\n\n")).toBeUndefined();
+      expect(valid.events.map((event) => event.options.data)).toEqual([
+        "abcd",
+        "cafe",
+      ]);
+    } finally {
+      valid.parser.destroy();
+    }
+  });
+
+  it.each(["data: ab\ndata: cd\n", "id: abc\ndata: de\n"])(
+    "rejects aggregate retained field bytes in %j",
+    (input) => {
+      const f = boundedEventFixture(4);
+      try {
+        expect(f.feed(input)).toMatchObject({
+          message: "EventSource message size exceeded",
+          aborted: false,
+        });
+        expect(f.events).toEqual([]);
+      } finally {
+        f.parser.destroy();
+      }
+    }
+  );
+
+  it("bounds unfinished lines at the byte limit plus seven syntax bytes", () => {
+    const f = boundedEventFixture(4);
+    try {
+      expect(f.feed("x".repeat(11))).toBeUndefined();
+      expect(f.feed("x")).toMatchObject({
+        message: "EventSource message size exceeded",
+      });
+      expect(f.events).toEqual([]);
+    } finally {
+      f.parser.destroy();
+    }
+  });
+
+  it("bounds empty data-line overhead with a finite 1025-line input", () => {
+    const f = boundedEventFixture(131072);
+    try {
+      expect(f.feed("data:\n".repeat(1024))).toBeUndefined();
+      expect(f.feed("data:\n")).toMatchObject({
+        message: "EventSource message size exceeded",
+      });
+      expect(f.events).toEqual([]);
+    } finally {
+      f.parser.destroy();
+    }
+  });
+
+  it.each(["x", "\n"])(
+    "handles %j at the final buffered input chunk boundary",
+    (last) => {
+      const f = boundedEventFixture(131072);
+      try {
+        for (let i = 0; i < 1024; i++) expect(f.feed("x")).toBeUndefined();
+        if (last === "\n") {
+          expect(f.feed(last)).toBeUndefined();
+          expect(f.feed("data: ok\n\n")).toBeUndefined();
+          expect(f.events[0]?.options.data).toBe("ok");
+        } else {
+          expect(f.feed(last)).toMatchObject({
+            message: "EventSource message size exceeded",
+          });
+        }
+      } finally {
+        f.parser.destroy();
+      }
+    }
+  );
+
+  it("preserves an explicit disabled limit on a small event", () => {
+    const f = boundedEventFixture(0);
+    try {
+      expect(f.feed("data: small\n\n")).toBeUndefined();
+      expect(f.events[0]?.options.data).toBe("small");
+    } finally {
+      f.parser.destroy();
+    }
+  });
+});
+
+describe("Nested Undici resumed error responses", () => {
+  it.each([302, 404])(
+    "does not replace already forwarded headers with a resumed %s",
+    (status) => {
+      const f = retryFixture();
+      f.retry.onHeaders(200, ["content-length", "2"], resumeFixture, "fixture");
+      f.retry.onData(Buffer.from("a"));
+      f.retry.onError(socketFailure());
+      expect(f.requests).toHaveLength(1);
+      expect(
+        f.retry.onHeaders(
+          status,
+          ["content-length", "1"],
+          resumeFixture,
+          "fixture"
+        )
+      ).toBe(false);
+      expect(f.statuses).toEqual([200]);
+      expect(f.body()).toBe("a");
+      expect(f.aborts).toHaveLength(1);
+      expect(f.aborts[0]).toBeInstanceOf(NestedRequestRetryError);
+    }
+  );
+});
+
+const { ByteParser: NestedByteParser } = actionsRequire(
+  "undici/lib/web/websocket/receiver.js"
+) as {
+  ByteParser: new (
+    ws: object,
+    extensions: null
+  ) => {
+    _write(chunk: Buffer, encoding: string, callback: () => void): void;
+    destroy(): void;
+  };
+};
+const { kResponse: nestedResponseSymbol } = actionsRequire(
+  "undici/lib/web/websocket/symbols.js"
+) as { kResponse: symbol };
+
+describe("Nested Undici WebSocket PONG backpressure", () => {
+  it.each([false, true])(
+    "handles two PING frames with backpressure %s",
+    (backpressure) => {
+      const writes: Buffer[] = [];
+      class FixtureSocket extends FixtureEventEmitter {
+        writableNeedDrain = false;
+        write(frame: Buffer) {
+          writes.push(frame);
+          this.writableNeedDrain = backpressure;
+          return !backpressure;
+        }
+      }
+      const socket = new FixtureSocket();
+      const parser = new NestedByteParser(
+        { [nestedResponseSymbol]: { socket } },
+        null
+      );
+      let callbacks = 0;
+      try {
+        parser._write(Buffer.from([0x89, 1, 97, 0x89, 1, 98]), "buffer", () => {
+          callbacks++;
+        });
+        if (backpressure) {
+          expect(writes).toHaveLength(1);
+          expect(callbacks).toBe(0);
+          socket.writableNeedDrain = false;
+          socket.emit("drain");
+          expect(writes).toHaveLength(2);
+          expect(callbacks).toBe(0);
+          socket.writableNeedDrain = false;
+          socket.emit("drain");
+        }
+        expect(callbacks).toBe(1);
+        expect(writes).toHaveLength(2);
+        expect(writes.map((frame) => frame[0])).toEqual([0x8a, 0x8a]);
+        // Client replies are masked. Unmask each one-byte PONG payload.
+        expect(writes.map((frame) => frame[6] ^ frame[2])).toEqual([97, 98]);
+      } finally {
+        parser.destroy();
+        socket.removeAllListeners();
+      }
+    }
+  );
+});
