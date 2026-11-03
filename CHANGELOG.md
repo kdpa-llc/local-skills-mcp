@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.0.9 (2026-11-03)</small>
+
+- fix(deps): patch unbundled brace expansion and Actions Undici (#116) ([36e1d4a](https://github.com/kdpa-llc/local-skills-mcp/commit/36e1d4a)), closes [#116](https://github.com/kdpa-llc/local-skills-mcp/issues/116)
+
 ## <small>1.0.8 (2026-11-02)</small>
 
 - fix(deps): update SDK and vulnerable transitive packages (#117) ([5d40713](https://github.com/kdpa-llc/local-skills-mcp/commit/5d40713)), closes [#117](https://github.com/kdpa-llc/local-skills-mcp/issues/117)
