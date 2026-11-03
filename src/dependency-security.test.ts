@@ -349,3 +349,741 @@ describe("Bounded Markdown linkification", () => {
     }
   });
 });
+
+type BraceExpand = (
+  source: string,
+  options?: {
+    max?: number;
+    maxLength?: number;
+    maxDepth?: number;
+    maxRewrites?: number;
+  }
+) => string[];
+const braceCjs = dependencyRequire("brace-expansion") as {
+  expand: BraceExpand;
+};
+const braceEsm = (await import(
+  new URL(
+    "./dist/esm/index.js",
+    pathToFileURL(dependencyRequire.resolve("brace-expansion/package.json"))
+  ).href
+)) as { expand: BraceExpand };
+const minimatchConsumer = dependencyRequire("minimatch") as {
+  braceExpand: (pattern: string) => string[];
+};
+
+// Bound work by documented parser budgets and exact outputs, never elapsed time.
+describe.each([
+  ["CommonJS", braceCjs.expand],
+  ["ESM", braceEsm.expand],
+] as const)("Brace expansion limits (%s)", (_format, expand) => {
+  it("returns a literal when the rewrite budget is exhausted", () => {
+    for (const cap of [0, 2]) {
+      const source = "{a}" + "}".repeat(cap + 1) + ",z}";
+      expect(expand(source, { maxRewrites: cap })).toEqual([source]);
+    }
+  });
+
+  it("retains the ordinary rewrite within its budget", () => {
+    expect(expand("{a},b}", { maxRewrites: 1 })).toEqual(["a}", "b"]);
+  });
+
+  it("bounds default rewrites on a small one-kilobyte pattern", () => {
+    const source = "{a}" + "}".repeat(1002) + ",z}";
+    expect(source.length).toBeLessThan(1100);
+    expect(expand(source)).toEqual([source]);
+  });
+
+  it("treats nesting beyond an explicit depth budget literally", () => {
+    const source = "{{{{{a,b}}}}}";
+    expect(expand(source, { maxDepth: 0 })).toEqual([source]);
+    expect(expand(source, { maxDepth: 2 })).toEqual([source]);
+    expect(expand("{a,b}", { maxDepth: 2 })).toEqual(["a", "b"]);
+  });
+
+  it("preserves normal nested, escaped, ranged and limited expansions", () => {
+    expect(expand("{a,{b,c}}{1..2}")).toEqual([
+      "a1",
+      "a2",
+      "b1",
+      "b2",
+      "c1",
+      "c2",
+    ]);
+    expect(expand("\\{a,b\\}")).toEqual(["{a,b}"]);
+    expect(expand("{a,b}{1,2}", { max: 1 })).toEqual(["a1"]);
+    expect(expand("{aa,bb}", { maxLength: 2 })).toEqual(["aa"]);
+  });
+});
+
+describe("Actual minimatch brace consumer", () => {
+  it("uses the dependency default rewrite bound", () => {
+    const source = "{a}" + "}".repeat(1002) + ",z}";
+    expect(minimatchConsumer.braceExpand(source)).toEqual([source]);
+  });
+  it("preserves normal and escaped glob alternatives", () => {
+    expect(minimatchConsumer.braceExpand("src/{a,b}{1..2}.ts")).toEqual([
+      "src/a1.ts",
+      "src/a2.ts",
+      "src/b1.ts",
+      "src/b2.ts",
+    ]);
+    expect(minimatchConsumer.braceExpand("src/\\{a,b\\}.ts")).toEqual([
+      "src/{a,b}.ts",
+    ]);
+  });
+});
+
+type RetryOptions = {
+  method: string;
+  body?: import("node:stream").Readable;
+  headers?: Record<string, string>;
+  retryOptions: {
+    maxRetries?: number;
+    retry?: (
+      error: Error,
+      context: unknown,
+      callback: (error?: Error) => void
+    ) => void;
+  };
+};
+type RetryFixture = {
+  onConnect(abort: (error: Error) => void): void;
+  onHeaders(
+    status: number,
+    headers: string[],
+    resume: () => void,
+    message: string
+  ): boolean;
+  onData(chunk: Buffer): boolean;
+  onError(error: Error): void;
+  onComplete(trailers: string[]): void;
+};
+type RetryHandlers = {
+  dispatch(options: RetryOptions, handler: RetryFixture): void;
+  handler: {
+    onConnect(abort: (error: Error) => void): void;
+    onHeaders(status: number): boolean;
+    onData(chunk: Buffer): boolean;
+    onError(error: Error): void;
+    onComplete(): void;
+  };
+};
+// Resolve from the actual Actions consumer without loading it or opening sockets.
+const actionsRequire = createRequire(
+  new URL("../node_modules/@actions/http-client/lib/index.js", import.meta.url)
+);
+const NestedRetryHandler = actionsRequire(
+  "undici/lib/handler/retry-handler.js"
+) as new (options: RetryOptions, handlers: RetryHandlers) => RetryFixture;
+
+const { Readable: FixtureReadable } = dependencyRequire(
+  "node:stream"
+) as typeof import("node:stream");
+const { RequestRetryError: NestedRequestRetryError } = actionsRequire(
+  "undici/lib/core/errors.js"
+) as { RequestRetryError: typeof Error };
+
+function retryFixture(
+  method = "GET",
+  retries = true,
+  body?: import("node:stream").Readable
+) {
+  const requests: RetryOptions[] = [];
+  const statuses: number[] = [];
+  const chunks: Buffer[] = [];
+  const errors: Error[] = [];
+  const aborts: Error[] = [];
+  let cancel: (error: Error) => void = () => {};
+  let complete = 0;
+  const retry = new NestedRetryHandler(
+    {
+      method,
+      body,
+      retryOptions: retries
+        ? { retry: (_error, _context, callback) => callback() }
+        : { maxRetries: 0 },
+    },
+    {
+      dispatch(options) {
+        // A finite in-memory callback sink: no network, timer or recursion.
+        if (requests.length >= 2) throw new Error("fixture dispatch budget");
+        requests.push(options);
+      },
+      handler: {
+        onConnect(abort) {
+          cancel = abort;
+        },
+        onHeaders(status) {
+          statuses.push(status);
+          return true;
+        },
+        onData(chunk) {
+          chunks.push(chunk);
+          return true;
+        },
+        onError(error) {
+          errors.push(error);
+        },
+        onComplete() {
+          complete++;
+        },
+      },
+    }
+  );
+  retry.onConnect((error) => aborts.push(error));
+  return {
+    retry,
+    requests,
+    statuses,
+    errors,
+    aborts,
+    cancel: (error: Error) => cancel(error),
+    body: () => Buffer.concat(chunks).toString(),
+    completed: () => complete,
+  };
+}
+const socketFailure = () =>
+  Object.assign(new Error("fixture reset"), {
+    code: "ECONNRESET",
+  });
+const resumeFixture = () => {};
+
+describe("Nested Undici retry framing", () => {
+  it.each([404, 302])(
+    "bounds a resumed %s body to its forwarded length",
+    (status) => {
+      const f = retryFixture();
+      f.retry.onHeaders(
+        status,
+        ["content-length", "2"],
+        resumeFixture,
+        "fixture"
+      );
+      f.retry.onData(Buffer.from("a"));
+      f.retry.onError(socketFailure());
+      expect(f.requests).toHaveLength(1);
+      expect(f.requests[0]?.headers?.range).toBe("bytes=1-1");
+      expect(f.statuses).toEqual([status]);
+      expect(f.body()).toBe("a");
+    }
+  );
+
+  it.each([404, 302])(
+    "rejects an overlong resume after %s without new downstream headers",
+    (status) => {
+      const f = retryFixture();
+      f.retry.onHeaders(
+        status,
+        ["content-length", "2"],
+        resumeFixture,
+        "fixture"
+      );
+      f.retry.onData(Buffer.from("a"));
+      f.retry.onError(socketFailure());
+      const accepted = f.retry.onHeaders(
+        206,
+        ["content-length", "3", "content-range", "bytes 1-3/4"],
+        resumeFixture,
+        "fixture"
+      );
+      if (accepted) f.retry.onData(Buffer.from("bcd"));
+      expect(accepted).toBe(false);
+      expect(f.aborts).toHaveLength(1);
+      expect(f.aborts[0]?.message).toMatch(/Content-Range mismatch/);
+      expect(f.aborts[0]).toBeInstanceOf(NestedRequestRetryError);
+      expect(f.aborts[0]).toMatchObject({ code: "UND_ERR_REQ_RETRY" });
+      expect(f.statuses).toEqual([status]);
+      expect(f.body()).toBe("a");
+    }
+  );
+
+  it.each(["GET", "HEAD"])(
+    "does not retry a forwarded %s response without a resumable body",
+    (method) => {
+      const f = retryFixture(method);
+      f.retry.onHeaders(
+        404,
+        method === "HEAD" ? ["content-length", "2"] : [],
+        resumeFixture,
+        "fixture"
+      );
+      const error = socketFailure();
+      f.retry.onError(error);
+      expect(f.requests).toEqual([]);
+      expect(f.errors).toEqual([error]);
+      expect(f.statuses).toEqual([404]);
+    }
+  );
+
+  it.each([200, 206])(
+    "preserves a valid partial %s response and completes once",
+    (status) => {
+      const f = retryFixture();
+      const headers =
+        status === 206
+          ? ["content-length", "2", "content-range", "bytes 0-1/2"]
+          : ["content-length", "2"];
+      f.retry.onHeaders(status, headers, resumeFixture, "fixture");
+      f.retry.onData(Buffer.from("a"));
+      f.retry.onError(socketFailure());
+      expect(f.requests[0]?.headers?.range).toBe("bytes=1-1");
+      expect(
+        f.retry.onHeaders(
+          206,
+          ["content-length", "1", "content-range", "bytes 1-1/2"],
+          resumeFixture,
+          "fixture"
+        )
+      ).toBe(true);
+      f.retry.onData(Buffer.from("b"));
+      f.retry.onComplete([]);
+      expect(f.statuses).toEqual([status]);
+      expect(f.body()).toBe("ab");
+      expect(f.completed()).toBe(1);
+      expect(f.aborts).toEqual([]);
+    }
+  );
+
+  it.each(["bytes 0-0/2", "bytes 1-2/3"])(
+    "reports %s as a controlled range error",
+    (range) => {
+      const f = retryFixture();
+      f.retry.onHeaders(200, ["content-length", "2"], resumeFixture, "fixture");
+      f.retry.onData(Buffer.from("a"));
+      f.retry.onError(socketFailure());
+      expect(() => {
+        const accepted = f.retry.onHeaders(
+          206,
+          [
+            "content-length",
+            range === "bytes 0-0/2" ? "1" : "2",
+            "content-range",
+            range,
+          ],
+          resumeFixture,
+          "fixture"
+        );
+        expect(accepted).toBe(false);
+      }).not.toThrow();
+      expect(f.aborts).toHaveLength(1);
+      expect(f.aborts[0]?.message).toMatch(/Content-Range mismatch/);
+      expect(f.aborts[0]).toBeInstanceOf(NestedRequestRetryError);
+      expect(f.aborts[0]).toMatchObject({ code: "UND_ERR_REQ_RETRY" });
+      expect(f.body()).toBe("a");
+    }
+  );
+
+  it("does not replay an already consumed in-memory request body", () => {
+    const body = FixtureReadable.from([Buffer.from("a")]);
+    try {
+      expect(body.read()?.toString()).toBe("a");
+      expect(FixtureReadable.isDisturbed(body)).toBe(true);
+      const f = retryFixture("POST", true, body);
+      const error = socketFailure();
+      f.retry.onError(error);
+      expect(f.requests).toEqual([]);
+      expect(f.errors).toEqual([error]);
+    } finally {
+      body.destroy();
+    }
+  });
+
+  it("preserves cancellation and configured zero-retry controls", () => {
+    const cancelled = retryFixture();
+    const error = socketFailure();
+    cancelled.cancel(error);
+    cancelled.retry.onError(error);
+    expect(cancelled.requests).toEqual([]);
+    expect(cancelled.aborts).toEqual([error]);
+    expect(cancelled.errors).toEqual([error]);
+
+    const disabled = retryFixture("GET", false);
+    disabled.retry.onError(error);
+    expect(disabled.requests).toEqual([]);
+    expect(disabled.errors).toEqual([error]);
+  });
+});
+
+type StreamState = {
+  origin: string;
+  lastEventId: string;
+  reconnectionTime: number;
+};
+type StreamEvent = {
+  type: string;
+  options: { data: string; lastEventId: string; origin: string };
+};
+const { EventSourceStream: NestedEventSourceStream } = actionsRequire(
+  "undici/lib/web/eventsource/eventsource-stream.js"
+) as {
+  EventSourceStream: new (options: {
+    eventSourceSettings: StreamState;
+    push: (event: StreamEvent) => boolean;
+  }) => {
+    _transform(chunk: Buffer, encoding: string, done: () => void): void;
+    destroy(): void;
+  };
+};
+
+describe("Nested Undici event-stream compatibility", () => {
+  it.each([1, 4])(
+    "preserves BOM, CRLF and UTF-8 across %s-byte chunks",
+    (width) => {
+      const state = {
+        origin: "https://fixture.invalid",
+        lastEventId: "",
+        reconnectionTime: 0,
+      };
+      const events: StreamEvent[] = [];
+      const parser = new NestedEventSourceStream({
+        eventSourceSettings: state,
+        push(event) {
+          events.push(event);
+          return true;
+        },
+      });
+      const bytes = Buffer.from(
+        "\uFEFFid: safe\r\nretry: 12\r\nevent: note\r\ndata: café\r\ndata: two\r\n\r\n"
+      );
+      let callbacks = 0;
+      try {
+        for (let i = 0; i < bytes.length; i += width) {
+          parser._transform(
+            bytes.subarray(i, i + width),
+            "buffer",
+            () => callbacks++
+          );
+        }
+        expect(callbacks).toBe(Math.ceil(bytes.length / width));
+        expect(events).toEqual([
+          {
+            type: "note",
+            options: {
+              data: "café\ntwo",
+              lastEventId: "safe",
+              origin: state.origin,
+            },
+          },
+        ]);
+        expect(state.reconnectionTime).toBe(12);
+      } finally {
+        parser.destroy();
+      }
+    }
+  );
+
+  it("ignores invalid retry and null-containing ID fields", () => {
+    const state = {
+      origin: "https://fixture.invalid",
+      lastEventId: "safe",
+      reconnectionTime: 12,
+    };
+    const events: StreamEvent[] = [];
+    const parser = new NestedEventSourceStream({
+      eventSourceSettings: state,
+      push(event) {
+        events.push(event);
+        return true;
+      },
+    });
+    try {
+      parser._transform(
+        Buffer.from("id: bad\0id\nretry: 2x\ndata: ok\n\n"),
+        "buffer",
+        () => {}
+      );
+      expect(state).toEqual({
+        origin: "https://fixture.invalid",
+        lastEventId: "safe",
+        reconnectionTime: 12,
+      });
+      expect(events[0]?.options.data).toBe("ok");
+    } finally {
+      parser.destroy();
+    }
+  });
+});
+
+// Keep these inputs small. The actual nested Actions dependency handles all
+// parsing and dispatch, while fixture dispatchers never open a socket.
+const { EventEmitter: FixtureEventEmitter } = dependencyRequire(
+  "node:events"
+) as typeof import("node:events");
+const NestedAgent = actionsRequire("undici/lib/dispatcher/agent.js") as new (
+  options: Record<string, unknown>
+) => {
+  dispatch(options: Record<string, unknown>, handler: object): boolean;
+  destroy(): Promise<void>;
+};
+
+describe("Nested Undici Agent TLS options", () => {
+  it("preserves certificate validation callbacks and CA bytes for its factory", async () => {
+    const checkServerIdentity = () => new Error("fixture certificate rejected");
+    const ca = Buffer.from("fixture CA bytes");
+    const tls = { checkServerIdentity, ca, rejectUnauthorized: true };
+    let received: Record<string, unknown> | undefined;
+    class FixtureDispatcher extends FixtureEventEmitter {
+      dispatch() {
+        return true;
+      }
+      destroy() {
+        return Promise.resolve();
+      }
+    }
+    const agent = new NestedAgent({
+      tls,
+      factory(_origin: string, options: Record<string, unknown>) {
+        received = options;
+        return new FixtureDispatcher();
+      },
+    });
+    try {
+      expect(
+        agent.dispatch(
+          { origin: "https://fixture.invalid", path: "/", method: "GET" },
+          {}
+        )
+      ).toBe(true);
+      expect(received?.tls).toEqual(tls);
+      expect(received?.tls).not.toBe(tls);
+      const forwarded = received?.tls as typeof tls;
+      expect(forwarded.checkServerIdentity).toBe(checkServerIdentity);
+      expect(forwarded.ca).toBe(ca);
+      expect(forwarded.checkServerIdentity()?.message).toBe(
+        "fixture certificate rejected"
+      );
+    } finally {
+      await agent.destroy();
+    }
+  });
+});
+
+type BoundedEventParser = {
+  _transform(
+    chunk: Buffer,
+    encoding: string,
+    done: (error?: Error) => void
+  ): void;
+  destroy(): void;
+};
+const BoundedEventSourceStream =
+  NestedEventSourceStream as unknown as new (options: {
+    maxEventSize: number;
+    eventSourceSettings: StreamState;
+    push: (event: StreamEvent) => boolean;
+  }) => BoundedEventParser;
+
+function boundedEventFixture(maxEventSize: number) {
+  const events: StreamEvent[] = [];
+  const parser = new BoundedEventSourceStream({
+    maxEventSize,
+    eventSourceSettings: {
+      origin: "https://fixture.invalid",
+      lastEventId: "",
+      reconnectionTime: 0,
+    },
+    push(event) {
+      events.push(event);
+      return true;
+    },
+  });
+  return {
+    parser,
+    events,
+    feed(text: string) {
+      let result: Error | undefined;
+      let callbacks = 0;
+      parser._transform(Buffer.from(text), "buffer", (error) => {
+        callbacks++;
+        result = error;
+      });
+      expect(callbacks).toBe(1);
+      return result;
+    },
+  };
+}
+
+describe("Nested Undici bounded EventSource events", () => {
+  it("accepts the byte limit and resets it after each dispatched event", () => {
+    const f = boundedEventFixture(4);
+    try {
+      expect(f.feed("data: café\n\n")).toMatchObject({
+        message: "EventSource message size exceeded",
+        aborted: false,
+      });
+      expect(f.events).toEqual([]);
+    } finally {
+      f.parser.destroy();
+    }
+    const valid = boundedEventFixture(4);
+    try {
+      expect(valid.feed("data: abcd\n\ndata: cafe\n\n")).toBeUndefined();
+      expect(valid.events.map((event) => event.options.data)).toEqual([
+        "abcd",
+        "cafe",
+      ]);
+    } finally {
+      valid.parser.destroy();
+    }
+  });
+
+  it.each(["data: ab\ndata: cd\n", "id: abc\ndata: de\n"])(
+    "rejects aggregate retained field bytes in %j",
+    (input) => {
+      const f = boundedEventFixture(4);
+      try {
+        expect(f.feed(input)).toMatchObject({
+          message: "EventSource message size exceeded",
+          aborted: false,
+        });
+        expect(f.events).toEqual([]);
+      } finally {
+        f.parser.destroy();
+      }
+    }
+  );
+
+  it("bounds unfinished lines at the byte limit plus seven syntax bytes", () => {
+    const f = boundedEventFixture(4);
+    try {
+      expect(f.feed("x".repeat(11))).toBeUndefined();
+      expect(f.feed("x")).toMatchObject({
+        message: "EventSource message size exceeded",
+      });
+      expect(f.events).toEqual([]);
+    } finally {
+      f.parser.destroy();
+    }
+  });
+
+  it("bounds empty data-line overhead with a finite 1025-line input", () => {
+    const f = boundedEventFixture(131072);
+    try {
+      expect(f.feed("data:\n".repeat(1024))).toBeUndefined();
+      expect(f.feed("data:\n")).toMatchObject({
+        message: "EventSource message size exceeded",
+      });
+      expect(f.events).toEqual([]);
+    } finally {
+      f.parser.destroy();
+    }
+  });
+
+  it.each(["x", "\n"])(
+    "handles %j at the final buffered input chunk boundary",
+    (last) => {
+      const f = boundedEventFixture(131072);
+      try {
+        for (let i = 0; i < 1024; i++) expect(f.feed("x")).toBeUndefined();
+        if (last === "\n") {
+          expect(f.feed(last)).toBeUndefined();
+          expect(f.feed("data: ok\n\n")).toBeUndefined();
+          expect(f.events[0]?.options.data).toBe("ok");
+        } else {
+          expect(f.feed(last)).toMatchObject({
+            message: "EventSource message size exceeded",
+          });
+        }
+      } finally {
+        f.parser.destroy();
+      }
+    }
+  );
+
+  it("preserves an explicit disabled limit on a small event", () => {
+    const f = boundedEventFixture(0);
+    try {
+      expect(f.feed("data: small\n\n")).toBeUndefined();
+      expect(f.events[0]?.options.data).toBe("small");
+    } finally {
+      f.parser.destroy();
+    }
+  });
+});
+
+describe("Nested Undici resumed error responses", () => {
+  it.each([302, 404])(
+    "does not replace already forwarded headers with a resumed %s",
+    (status) => {
+      const f = retryFixture();
+      f.retry.onHeaders(200, ["content-length", "2"], resumeFixture, "fixture");
+      f.retry.onData(Buffer.from("a"));
+      f.retry.onError(socketFailure());
+      expect(f.requests).toHaveLength(1);
+      expect(
+        f.retry.onHeaders(
+          status,
+          ["content-length", "1"],
+          resumeFixture,
+          "fixture"
+        )
+      ).toBe(false);
+      expect(f.statuses).toEqual([200]);
+      expect(f.body()).toBe("a");
+      expect(f.aborts).toHaveLength(1);
+      expect(f.aborts[0]).toBeInstanceOf(NestedRequestRetryError);
+    }
+  );
+});
+
+const { ByteParser: NestedByteParser } = actionsRequire(
+  "undici/lib/web/websocket/receiver.js"
+) as {
+  ByteParser: new (
+    ws: object,
+    extensions: null
+  ) => {
+    _write(chunk: Buffer, encoding: string, callback: () => void): void;
+    destroy(): void;
+  };
+};
+const { kResponse: nestedResponseSymbol } = actionsRequire(
+  "undici/lib/web/websocket/symbols.js"
+) as { kResponse: symbol };
+
+describe("Nested Undici WebSocket PONG backpressure", () => {
+  it.each([false, true])(
+    "handles two PING frames with backpressure %s",
+    (backpressure) => {
+      const writes: Buffer[] = [];
+      class FixtureSocket extends FixtureEventEmitter {
+        writableNeedDrain = false;
+        write(frame: Buffer) {
+          writes.push(frame);
+          this.writableNeedDrain = backpressure;
+          return !backpressure;
+        }
+      }
+      const socket = new FixtureSocket();
+      const parser = new NestedByteParser(
+        { [nestedResponseSymbol]: { socket } },
+        null
+      );
+      let callbacks = 0;
+      try {
+        parser._write(Buffer.from([0x89, 1, 97, 0x89, 1, 98]), "buffer", () => {
+          callbacks++;
+        });
+        if (backpressure) {
+          expect(writes).toHaveLength(1);
+          expect(callbacks).toBe(0);
+          socket.writableNeedDrain = false;
+          socket.emit("drain");
+          expect(writes).toHaveLength(2);
+          expect(callbacks).toBe(0);
+          socket.writableNeedDrain = false;
+          socket.emit("drain");
+        }
+        expect(callbacks).toBe(1);
+        expect(writes).toHaveLength(2);
+        expect(writes.map((frame) => frame[0])).toEqual([0x8a, 0x8a]);
+        // Client replies are masked. Unmask each one-byte PONG payload.
+        expect(writes.map((frame) => frame[6] ^ frame[2])).toEqual([97, 98]);
+      } finally {
+        parser.destroy();
+        socket.removeAllListeners();
+      }
+    }
+  );
+});
