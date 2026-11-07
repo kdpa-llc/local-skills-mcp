@@ -366,7 +366,7 @@ If you find Local Skills MCP useful, please consider supporting its development!
 
 ## 📄 License
 
-MIT License - see [LICENSE][license-file] file. **Copyright © 2025 KDPA**
+MIT License - see [LICENSE][license-file] file. **Copyright © 2025 KDPA LLC**
 
 ## 🙏 Acknowledgments
 
